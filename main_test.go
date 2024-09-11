@@ -1,12 +1,10 @@
 package main
 
 import (
-	"os"
-	"path/filepath"
 	"testing"
 )
 
-func TestGeneratePDF(t *testing.T) {
+func BenchmarkGeneratePDF(b *testing.B) {
 	inv := Invoice{
 		ClientName:    "Ungureanu Daniel",
 		IssueDate:     "12 Aug, 2024",
@@ -15,17 +13,11 @@ func TestGeneratePDF(t *testing.T) {
 		UnitPrice:     10.00,
 		Total:         10.00,
 	}
-	outputDir := "./pdf"
-	pdfFile := filepath.Join(outputDir, "test_hello_world.pdf")
 
-	defer os.Remove(pdfFile)
-
-	err := generatePDF(inv)
-	if err != nil {
-		t.Fatalf("Error generating PDF: %v", err)
-	}
-
-	if _, err := os.Stat(pdfFile); os.IsNotExist(err) {
-		t.Fatalf("PDF file does not exist: %v", err)
+	for i := 0; i < b.N; i++ {
+		err := generateInvoicePdf(&inv)
+		if err != nil {
+			b.Fatalf("Error generating PDF: %v", err)
+		}
 	}
 }

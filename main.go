@@ -17,14 +17,116 @@ type Invoice struct {
 	Total         float64
 }
 
-func rightAlign(pdf *gopdf.GoPdf, xEnd, y float64, text string) {
-	textWidth, _ := pdf.MeasureTextWidth(text)
-	xStart := xEnd - textWidth
-	pdf.SetXY(xStart, y)
+func setText(pdf *gopdf.GoPdf, x, y float64, text string) {
+	pdf.SetXY(x, y)
 	pdf.Cell(nil, text)
 }
 
-func generatePDF(invoice Invoice) error {
+func setRightAlignedText(pdf *gopdf.GoPdf, xEnd, y float64, text string) {
+	textWidth, _ := pdf.MeasureTextWidth(text)
+	xStart := xEnd - textWidth
+	setText(pdf, xStart, y, text)
+}
+
+func addImage(pdf *gopdf.GoPdf, path string, x, y, w, h float64) error {
+	rect := &gopdf.Rect{W: w, H: h}
+	return pdf.Image(path, x, y, rect)
+}
+
+func resetTextStyles(pdf *gopdf.GoPdf) {
+	pdf.SetFont("Roboto", "", 10)
+	pdf.SetTextColor(94, 100, 112)
+}
+
+func addFooter(pdf *gopdf.GoPdf) {
+	setText(pdf, 347, 796, "contact@hintermann.ro")
+	setText(pdf, 492, 796, "Pagina 1 din 1")
+}
+
+func addHeader(pdf *gopdf.GoPdf, invoice *Invoice) {
+	setText(pdf, 40, 63, "Asociația de Caritate Hintermann")
+	setText(pdf, 40, 79, "Strada Spicului, Nr. 12")
+	setText(pdf, 40, 95, "Bl. 40, Sc. A, Ap. 12")
+	setText(pdf, 40, 111, "500460")
+	setText(pdf, 40, 127, "Brașov")
+	setText(pdf, 40, 143, "România")
+
+	setText(pdf, 312, 63, "ID tranzacție:")
+	setRightAlignedText(pdf, 555, 63, invoice.TransactionId)
+	setText(pdf, 312, 79, "Data emiterii:")
+	setRightAlignedText(pdf, 555, 79, invoice.IssueDate)
+	setText(pdf, 312, 95, "Client:")
+	setRightAlignedText(pdf, 555, 95, invoice.ClientName)
+
+	pdf.SetFont("Roboto-Bold", "", 18)
+	pdf.SetTextColor(0, 0, 0)
+	setText(pdf, 494, 32, "Factură")
+
+	resetTextStyles(pdf)
+}
+
+func addTable(pdf *gopdf.GoPdf) {
+	setText(pdf, 40, 195, "Serviciu")
+	setText(pdf, 312, 195, "Cantitate")
+	setText(pdf, 419, 195, "Preț unitar")
+	setText(pdf, 532, 195, "Total")
+}
+
+func addSummary(pdf *gopdf.GoPdf, invoice *Invoice) {
+	setText(pdf, 312, 321, "Subtotal:")
+	setText(pdf, 312, 343, "TVA:")
+	setText(pdf, 312, 397, "Debitat din plata dvs.:")
+
+	total := fmt.Sprintf("%.2f lei", invoice.Total)
+	setRightAlignedText(pdf, 555, 321, total)
+
+	setText(pdf, 522, 343, "0.00 lei")
+
+	minusTotal := fmt.Sprintf("-%.2f lei", invoice.Total)
+	setRightAlignedText(pdf, 555, 397, minusTotal)
+
+	pdf.SetFont("Roboto-Bold", "", 10)
+	pdf.SetTextColor(0, 0, 0)
+	setText(pdf, 312, 375, "Total:")
+
+	setRightAlignedText(pdf, 555, 375, total)
+
+	setText(pdf, 312, 429, "Sumă datorată:")
+	setText(pdf, 521, 429, "0.00 lei")
+
+	resetTextStyles(pdf)
+}
+
+func addProduct(pdf *gopdf.GoPdf, invoice *Invoice) {
+	setText(pdf, 40, 253, "Fiecare donație contribuie la transformarea")
+	setText(pdf, 40, 266, "vieților familiilor românești aflate în mare nevoie.")
+	setText(pdf, 40, 279, "Ia parte și tu acum.")
+
+	setText(pdf, 347, 237, "1")
+
+	unitPrice := fmt.Sprintf("%.2f lei", invoice.UnitPrice)
+	setRightAlignedText(pdf, 466, 237, unitPrice)
+
+	total := fmt.Sprintf("%.2f lei", invoice.Total)
+	setRightAlignedText(pdf, 555, 237, total)
+
+	pdf.SetTextColor(0, 0, 0)
+	setText(pdf, 40, 237, invoice.ProductName)
+	pdf.SetTextColor(94, 100, 112)
+}
+
+func addStrokes(pdf *gopdf.GoPdf) {
+	pdf.SetStrokeColor(215, 218, 224)
+	pdf.SetLineWidth(0.5)
+
+	pdf.Line(40, 216.5, 555, 216.5)
+	pdf.Line(40, 310, 555, 310)
+	pdf.Line(312, 364.5, 555, 364.5)
+	pdf.Line(312, 418.5, 555, 418.5)
+	pdf.Line(40, 775.5, 555, 775.5)
+}
+
+func generateInvoicePdf(invoice *Invoice) error {
 	pdf := gopdf.GoPdf{}
 	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
 	pdf.AddPage()
@@ -38,133 +140,23 @@ func generatePDF(invoice Invoice) error {
 		return err
 	}
 
-	rect := &gopdf.Rect{
-		W: 167,
-		H: 17,
-	}
-	err = pdf.Image("./static/hintermann-logo.png", 40, 32, rect)
+	err = addImage(&pdf, "./static/hintermann-logo.png", 40, 32, 167, 17)
 	if err != nil {
 		return err
 	}
-	rect = &gopdf.Rect{
-		W: 138,
-		H: 14,
-	}
-	err = pdf.Image("./static/hintermann-logo-small.png", 40, 796, rect)
+	err = addImage(&pdf, "./static/hintermann-logo-small.png", 40, 796, 138, 14)
 	if err != nil {
 		return err
 	}
 
-	pdf.SetFont("Roboto", "", 10)
-	pdf.SetTextColor(94, 100, 112)
+	resetTextStyles(&pdf)
 
-	// hintermann
-	pdf.SetXY(40, 63)
-	pdf.Cell(nil, "Asociația de Caritate Hintermann")
-	pdf.SetXY(40, 79)
-	pdf.Cell(nil, "Strada Spicului, Nr. 12")
-	pdf.SetXY(40, 95)
-	pdf.Cell(nil, "Bl. 40, Sc. A, Ap. 12")
-	pdf.SetXY(40, 111)
-	pdf.Cell(nil, "500460")
-	pdf.SetXY(40, 127)
-	pdf.Cell(nil, "Brașov")
-	pdf.SetXY(40, 143)
-	pdf.Cell(nil, "România")
-
-	// cilent
-	pdf.SetXY(312, 63)
-	pdf.Cell(nil, "ID tranzacție:")
-	rightAlign(&pdf, 555, 63, invoice.TransactionId)
-	pdf.SetXY(312, 79)
-	pdf.Cell(nil, "Data emiterii:")
-	rightAlign(&pdf, 555, 79, invoice.IssueDate)
-	pdf.SetXY(312, 95)
-	pdf.Cell(nil, "Client:")
-	rightAlign(&pdf, 555, 95, invoice.ClientName)
-
-	// table head
-	pdf.SetXY(40, 195)
-	pdf.Cell(nil, "Serviciu")
-	pdf.SetXY(312, 195)
-	pdf.Cell(nil, "Cantitate")
-	pdf.SetXY(419, 195)
-	pdf.Cell(nil, "Preț unitar")
-	pdf.SetXY(532, 195)
-	pdf.Cell(nil, "Total")
-
-	// product description
-	pdf.SetXY(40, 253)
-	pdf.Cell(nil, "Fiecare donație contribuie la transformarea")
-	pdf.SetXY(40, 266)
-	pdf.Cell(nil, "vieților familiilor românești aflate în mare nevoie.")
-	pdf.SetXY(40, 279)
-	pdf.Cell(nil, "Ia parte și tu acum.")
-
-	// product price
-	pdf.SetXY(347, 237)
-	pdf.Cell(nil, "1")
-
-	unitPrice := fmt.Sprintf("%.2f lei", invoice.UnitPrice)
-	rightAlign(&pdf, 466, 237, unitPrice)
-
-	total := fmt.Sprintf("%.2f lei", invoice.Total)
-	rightAlign(&pdf, 555, 237, total)
-
-	// footer
-	pdf.SetXY(347, 796)
-	pdf.Cell(nil, "contact@hintermann.ro")
-	pdf.SetXY(492, 796)
-	pdf.Cell(nil, "Pagina 1 din 1")
-
-	// summary
-	pdf.SetXY(312, 321)
-	pdf.Cell(nil, "Subtotal:")
-	pdf.SetXY(312, 343)
-	pdf.Cell(nil, "TVA:")
-	pdf.SetXY(312, 397)
-	pdf.Cell(nil, "Debitat din plata dvs.:")
-	pdf.SetXY(517, 321)
-	pdf.Cell(nil, "10.00 lei")
-	pdf.SetXY(522, 343)
-	pdf.Cell(nil, "0.00 lei")
-	pdf.SetXY(514, 397)
-	pdf.Cell(nil, "-10.00 lei")
-
-	// product title
-	pdf.SetTextColor(0, 0, 0)
-	pdf.SetXY(40, 237)
-	pdf.Cell(nil, invoice.ProductName)
-
-	// summary bold
-	pdf.SetFont("Roboto-Bold", "", 10)
-	pdf.SetXY(312, 375)
-	pdf.Cell(nil, "Total:")
-	pdf.SetXY(515, 375)
-	pdf.Cell(nil, "10.00 lei")
-	pdf.SetXY(312, 429)
-	pdf.Cell(nil, "Sumă datorată:")
-	pdf.SetXY(521, 429)
-	pdf.Cell(nil, "0.00 lei")
-
-	// title
-	pdf.SetFont("Roboto-Bold", "", 18)
-	pdf.SetXY(494, 32)
-	pdf.Cell(nil, "Factură")
-
-	// strokes
-	pdf.SetStrokeColor(215, 218, 224)
-	pdf.SetLineWidth(0.5)
-	// table head
-	pdf.Line(40, 216.5, 555, 216.5)
-	// summary
-	pdf.Line(40, 310, 555, 310)
-	// summary total
-	pdf.Line(312, 364.5, 555, 364.5)
-	// summary amount due
-	pdf.Line(312, 418.5, 555, 418.5)
-	// footer
-	pdf.Line(40, 775.5, 555, 775.5)
+	addHeader(&pdf, invoice)
+	addFooter(&pdf)
+	addTable(&pdf)
+	addProduct(&pdf, invoice)
+	addSummary(&pdf, invoice)
+	addStrokes(&pdf)
 
 	outputDir := "./pdf"
 	pdfFile := filepath.Join(outputDir, "output.pdf")
@@ -176,11 +168,11 @@ func main() {
 		ClientName:    "Ungureanu Daniel",
 		IssueDate:     "12 Aug, 2024",
 		TransactionId: "pi_3Pn0hXDXCtuWOFq820psOpql",
-		ProductName:   "Donație unică de 420 lei",
-		UnitPrice:     420420.00,
-		Total:         6969.00,
+		ProductName:   "Donație unică de 10 lei",
+		UnitPrice:     10,
+		Total:         10,
 	}
-	err := generatePDF(inv)
+	err := generateInvoicePdf(&inv)
 	if err != nil {
 		log.Fatalf("Error generating PDF: %v", err)
 	}
