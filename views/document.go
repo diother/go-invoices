@@ -5,7 +5,7 @@ import (
 	"github.com/signintech/gopdf"
 )
 
-type Document interface {
+type DocumentView interface {
 	GenerateDocument()
 	addHeader()
 	addFooter()

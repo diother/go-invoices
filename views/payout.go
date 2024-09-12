@@ -8,29 +8,37 @@ import (
 	"github.com/signintech/gopdf"
 )
 
-func (p PayoutView) addHeader(pdf *gopdf.GoPdf, payout *models.Payout) {
-	setText(pdf, 40, 63, "Stripe Payments Europe, Limited")
-	setText(pdf, 40, 79, "The One Building")
-	setText(pdf, 40, 95, "1 Grand Canal Street Lower")
-	setText(pdf, 40, 111, "Dublin 2")
-	setText(pdf, 40, 127, "Co. Dublin")
-	setText(pdf, 40, 143, "Ireland")
+const (
+	marginTop   = 32
+	marginLeft  = 40
+	marginRight = 555
+)
 
-	setText(pdf, 312, 63, "Data emiterii:")
-	setRightAlignedText(pdf, 555, 63, payout.IssueDate)
-	setText(pdf, 312, 79, "Nr. cont:")
-	setRightAlignedText(pdf, 555, 79, "acct_1PVfUvDXCtuWOFq8")
-	setText(pdf, 312, 95, "Proprietar cont:")
-	setRightAlignedText(pdf, 555, 95, "Asociația de Caritate Hintermann")
-	setText(pdf, 312, 111, "Adresă:")
-	setRightAlignedText(pdf, 555, 111, "Strada Spicului, Nr. 12")
-	setRightAlignedText(pdf, 555, 127, "Bl. 40, Sc. A, Ap. 12")
-	setRightAlignedText(pdf, 555, 143, "Brașov, România")
-	setRightAlignedText(pdf, 555, 159, "500460")
+func (p PayoutView) addHeader(pdf *gopdf.GoPdf, payout *models.Payout) {
+	const startY = marginTop
+
+	setText(pdf, marginLeft, startY+31, "Stripe Payments Europe, Limited")
+	setText(pdf, marginLeft, startY+47, "The One Building")
+	setText(pdf, marginLeft, startY+63, "1 Grand Canal Street Lower")
+	setText(pdf, marginLeft, startY+79, "Dublin 2")
+	setText(pdf, marginLeft, startY+95, "Co. Dublin")
+	setText(pdf, marginLeft, startY+111, "Ireland")
+
+	setText(pdf, 312, startY+31, "Data emiterii:")
+	setRightAlignedText(pdf, marginRight, startY+31, payout.IssueDate)
+	setText(pdf, 312, startY+47, "Nr. cont:")
+	setRightAlignedText(pdf, marginRight, startY+47, "acct_1PVfUvDXCtuWOFq8")
+	setText(pdf, 312, startY+63, "Proprietar cont:")
+	setRightAlignedText(pdf, marginRight, startY+63, "Asociația de Caritate Hintermann")
+	setText(pdf, 312, startY+79, "Adresă:")
+	setRightAlignedText(pdf, marginRight, startY+79, "Strada Spicului, Nr. 12")
+	setRightAlignedText(pdf, marginRight, startY+95, "Bl. MarginLeft, Sc. A, Ap. 12")
+	setRightAlignedText(pdf, marginRight, startY+111, "Brașov, România")
+	setRightAlignedText(pdf, marginRight, startY+127, "500460")
 
 	pdf.SetFont("Roboto-Bold", "", 18)
 	pdf.SetTextColor(0, 0, 0)
-	setRightAlignedText(pdf, 555, 32, "Extras plată")
+	setRightAlignedText(pdf, marginRight, startY, "Extras plată")
 
 	resetTextStyles(pdf)
 }
@@ -41,7 +49,7 @@ func (p PayoutView) addFooter(pdf *gopdf.GoPdf) {
 }
 
 func addPayoutTable(pdf *gopdf.GoPdf) {
-	setText(pdf, 40, 315, "Tranzacție")
+	setText(pdf, marginLeft, 315, "Tranzacție")
 	setText(pdf, 328, 315, "Preț brut")
 	setText(pdf, 424.5, 315, "Taxă Stripe")
 	setText(pdf, 532, 315, "Total")
@@ -54,22 +62,22 @@ func addPayoutSummary(pdf *gopdf.GoPdf, payout *models.Payout) {
 	setText(pdf, 312, 221, "Preț brut:")
 	setText(pdf, 312, 237, "Taxe Stripe:")
 
-	setRightAlignedText(pdf, 555, 221, "10 lei")
-	setRightAlignedText(pdf, 555, 237, "10 lei")
+	setRightAlignedText(pdf, marginRight, 221, "10 lei")
+	setRightAlignedText(pdf, marginRight, 237, "10 lei")
 
 	pdf.SetTextColor(0, 0, 0)
-	setText(pdf, 40, 221, "ID plată:")
-	setText(pdf, 40, 237, "Data efectuării:")
+	setText(pdf, marginLeft, 221, "ID plată:")
+	setText(pdf, marginLeft, 237, "Data efectuării:")
 
 	pdf.SetFont("Roboto-Bold", "", 10)
 	setText(pdf, 312, 253, "Total:")
-	setRightAlignedText(pdf, 555, 253, "10 lei")
+	setRightAlignedText(pdf, marginRight, 253, "10 lei")
 
 	resetTextStyles(pdf)
 }
 
 func addPayoutProduct(pdf *gopdf.GoPdf, payout *models.Payout) {
-	setText(pdf, 40, 373, "ch_3PXmP9DXCtuWOFq82TlDyZ3F")
+	setText(pdf, marginLeft, 373, "ch_3PXmP9DXCtuWOFq82TlDyZ3F")
 
 	setRightAlignedText(pdf, 367, 357, "10.00 lei")
 
@@ -77,10 +85,10 @@ func addPayoutProduct(pdf *gopdf.GoPdf, payout *models.Payout) {
 	setRightAlignedText(pdf, 474, 357, unitPrice)
 
 	total := fmt.Sprintf("%.2f lei", payout.Total)
-	setRightAlignedText(pdf, 555, 357, total)
+	setRightAlignedText(pdf, marginRight, 357, total)
 
 	pdf.SetTextColor(0, 0, 0)
-	setText(pdf, 40, 357, payout.ProductName)
+	setText(pdf, marginLeft, 357, payout.ProductName)
 	pdf.SetTextColor(94, 100, 112)
 }
 
@@ -98,11 +106,11 @@ func (p PayoutView) GenerateDocument(payout *models.Payout) error {
 		return err
 	}
 
-	err = addImage(&pdf, "./static/stripe-logo.png", 40, 32, 51, 21)
+	err = addImage(&pdf, "./static/stripe-logo.png", marginLeft, 32, 51, 21)
 	if err != nil {
 		return err
 	}
-	err = addImage(&pdf, "./static/stripe-logo-small.png", 40, 793, 41, 17)
+	err = addImage(&pdf, "./static/stripe-logo-small.png", marginLeft, 793, 41, 17)
 	if err != nil {
 		return err
 	}
