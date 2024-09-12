@@ -2,10 +2,13 @@ package main
 
 import (
 	"testing"
+
+	"github.com/diother/go-invoices/models"
+	"github.com/diother/go-invoices/views"
 )
 
 func BenchmarkGeneratePDF(b *testing.B) {
-	inv := Invoice{
+	inv := models.Invoice{
 		ClientName:    "Ungureanu Daniel",
 		IssueDate:     "12 Aug, 2024",
 		TransactionId: "pi_3Pn0hXDXCtuWOFq820psOpql",
@@ -13,9 +16,10 @@ func BenchmarkGeneratePDF(b *testing.B) {
 		UnitPrice:     10.00,
 		Total:         10.00,
 	}
+	adapter := views.InvoiceView{Invoice: &inv}
 
 	for i := 0; i < b.N; i++ {
-		err := generateInvoicePdf(&inv)
+		err := adapter.GenerateDocument(&inv)
 		if err != nil {
 			b.Fatalf("Error generating PDF: %v", err)
 		}

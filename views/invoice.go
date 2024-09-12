@@ -8,12 +8,7 @@ import (
 	"github.com/signintech/gopdf"
 )
 
-func addFooter(pdf *gopdf.GoPdf) {
-	setText(pdf, 347, 796, "contact@hintermann.ro")
-	setText(pdf, 492, 796, "Pagina 1 din 1")
-}
-
-func addHeader(pdf *gopdf.GoPdf, invoice *models.Invoice) {
+func (i InvoiceView) addHeader(pdf *gopdf.GoPdf, invoice *models.Invoice) {
 	setText(pdf, 40, 63, "Asociația de Caritate Hintermann")
 	setText(pdf, 40, 79, "Strada Spicului, Nr. 12")
 	setText(pdf, 40, 95, "Bl. 40, Sc. A, Ap. 12")
@@ -30,19 +25,29 @@ func addHeader(pdf *gopdf.GoPdf, invoice *models.Invoice) {
 
 	pdf.SetFont("Roboto-Bold", "", 18)
 	pdf.SetTextColor(0, 0, 0)
-	setText(pdf, 494, 32, "Factură")
+	setRightAlignedText(pdf, 555, 32, "Factură")
 
 	resetTextStyles(pdf)
 }
 
-func addTable(pdf *gopdf.GoPdf) {
+func (i InvoiceView) addFooter(pdf *gopdf.GoPdf) {
+	setText(pdf, 347, 796, "contact@hintermann.ro")
+	setText(pdf, 492, 796, "Pagina 1 din 1")
+
+	pdf.Line(40, 775.5, 555, 775.5)
+	pdf.Line(471.5, 795, 471.5, 805)
+}
+
+func addInvoiceTable(pdf *gopdf.GoPdf) {
 	setText(pdf, 40, 195, "Serviciu")
 	setText(pdf, 312, 195, "Cantitate")
 	setText(pdf, 419, 195, "Preț unitar")
 	setText(pdf, 532, 195, "Total")
+
+	pdf.Line(40, 216.5, 555, 216.5)
 }
 
-func addSummary(pdf *gopdf.GoPdf, invoice *models.Invoice) {
+func addInvoiceSummary(pdf *gopdf.GoPdf, invoice *models.Invoice) {
 	setText(pdf, 312, 321, "Subtotal:")
 	setText(pdf, 312, 343, "TVA:")
 	setText(pdf, 312, 397, "Debitat din plata dvs.:")
@@ -64,10 +69,14 @@ func addSummary(pdf *gopdf.GoPdf, invoice *models.Invoice) {
 	setText(pdf, 312, 429, "Sumă datorată:")
 	setText(pdf, 521, 429, "0.00 lei")
 
+	pdf.Line(40, 310, 555, 310)
+	pdf.Line(312, 364.5, 555, 364.5)
+	pdf.Line(312, 418.5, 555, 418.5)
+
 	resetTextStyles(pdf)
 }
 
-func addProduct(pdf *gopdf.GoPdf, invoice *models.Invoice) {
+func addInvoiceProduct(pdf *gopdf.GoPdf, invoice *models.Invoice) {
 	setText(pdf, 40, 253, "Fiecare donație contribuie la transformarea")
 	setText(pdf, 40, 266, "vieților familiilor românești aflate în mare nevoie.")
 	setText(pdf, 40, 279, "Ia parte și tu acum.")
@@ -85,18 +94,7 @@ func addProduct(pdf *gopdf.GoPdf, invoice *models.Invoice) {
 	pdf.SetTextColor(94, 100, 112)
 }
 
-func addStrokes(pdf *gopdf.GoPdf) {
-	pdf.SetStrokeColor(215, 218, 224)
-	pdf.SetLineWidth(0.5)
-
-	pdf.Line(40, 216.5, 555, 216.5)
-	pdf.Line(40, 310, 555, 310)
-	pdf.Line(312, 364.5, 555, 364.5)
-	pdf.Line(312, 418.5, 555, 418.5)
-	pdf.Line(40, 775.5, 555, 775.5)
-}
-
-func GenerateInvoicePdf(invoice *models.Invoice) error {
+func (i InvoiceView) GenerateDocument(invoice *models.Invoice) error {
 	pdf := gopdf.GoPdf{}
 	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
 	pdf.AddPage()
@@ -121,12 +119,12 @@ func GenerateInvoicePdf(invoice *models.Invoice) error {
 
 	resetTextStyles(&pdf)
 
-	addHeader(&pdf, invoice)
-	addFooter(&pdf)
-	addTable(&pdf)
-	addProduct(&pdf, invoice)
-	addSummary(&pdf, invoice)
-	addStrokes(&pdf)
+	i.addHeader(&pdf, invoice)
+	i.addFooter(&pdf)
+
+	addInvoiceTable(&pdf)
+	addInvoiceProduct(&pdf, invoice)
+	addInvoiceSummary(&pdf, invoice)
 
 	outputDir := "./pdf"
 	pdfFile := filepath.Join(outputDir, "output.pdf")
