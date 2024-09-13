@@ -19,6 +19,10 @@ type PayoutView struct {
 	Payout *models.Payout
 }
 
+type MonthlyPayoutView struct {
+	MonthlyPayout *models.MonthlyPayout
+}
+
 const (
 	marginTop    = 32
 	marginLeft   = 40

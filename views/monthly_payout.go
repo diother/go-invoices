@@ -8,7 +8,7 @@ import (
 	"github.com/signintech/gopdf"
 )
 
-func (p PayoutView) addHeader(pdf *gopdf.GoPdf, issueDate string) {
+func (p MonthlyPayoutView) addHeader(pdf *gopdf.GoPdf, issueDate string) {
 	const startY = marginTop
 
 	addImage(pdf, "./static/stripe-logo.png", marginLeft, startY, 51, 21)
@@ -34,24 +34,24 @@ func (p PayoutView) addHeader(pdf *gopdf.GoPdf, issueDate string) {
 
 	pdf.SetFont("Roboto-Bold", "", 18)
 	pdf.SetTextColor(0, 0, 0)
-	setRightAlignedText(pdf, marginRight, startY, "Extras plată")
+	setRightAlignedText(pdf, marginRight, startY, "Extras lunar")
 
 	resetTextStyles(pdf)
 }
 
-func (p PayoutView) addSecondaryHeader(pdf *gopdf.GoPdf) {
+func (p MonthlyPayoutView) addSecondaryHeader(pdf *gopdf.GoPdf) {
 	const startY = marginTop
 
 	addImage(pdf, "./static/stripe-logo.png", marginLeft, startY, 51, 21)
 
 	pdf.SetFont("Roboto-Bold", "", 18)
 	pdf.SetTextColor(0, 0, 0)
-	setRightAlignedText(pdf, marginRight, startY, "Extras plată")
+	setRightAlignedText(pdf, marginRight, startY, "Extras lunar")
 
 	resetTextStyles(pdf)
 }
 
-func (p PayoutView) addFooter(pdf *gopdf.GoPdf, pagesNeeded int, currentPage int) {
+func (p MonthlyPayoutView) addFooter(pdf *gopdf.GoPdf, pagesNeeded int, currentPage int) {
 	const endY = marginBottom
 
 	addImage(pdf, "./static/stripe-logo-small.png", marginLeft, endY-17, 41, 17)
@@ -62,11 +62,10 @@ func (p PayoutView) addFooter(pdf *gopdf.GoPdf, pagesNeeded int, currentPage int
 	pdf.Line(marginLeft, endY-37, marginRight, endY-37)
 }
 
-func addPayoutSummary(pdf *gopdf.GoPdf, payout *models.Payout) {
+func addMonthlyPayoutSummary(pdf *gopdf.GoPdf, payout *models.MonthlyPayout) {
 	const startY = 211
 
-	setText(pdf, 81, startY+10, payout.PayoutID)
-	setText(pdf, 112, startY+26, payout.PayoutDate)
+	setText(pdf, marginLeft, startY+26, payout.ReportPeriod)
 
 	setText(pdf, 312, startY+10, "Preț brut:")
 	setText(pdf, 312, startY+26, "Taxe Stripe:")
@@ -75,8 +74,7 @@ func addPayoutSummary(pdf *gopdf.GoPdf, payout *models.Payout) {
 	setRightAlignedText(pdf, marginRight, startY+26, payout.StripeFees)
 
 	pdf.SetTextColor(0, 0, 0)
-	setText(pdf, marginLeft, startY+10, "ID plată:")
-	setText(pdf, marginLeft, startY+26, "Data efectuării:")
+	setText(pdf, marginLeft, startY+10, "Periodă extras:")
 
 	pdf.SetFont("Roboto-Bold", "", 10)
 	setText(pdf, 312, startY+42, "Total:")
@@ -89,7 +87,7 @@ func addPayoutSummary(pdf *gopdf.GoPdf, payout *models.Payout) {
 	pdf.Line(297.5, startY-.5, 298.5, startY+63.5)
 }
 
-func addPayoutTable(pdf *gopdf.GoPdf, startY float64) {
+func addMonthlyPayoutTable(pdf *gopdf.GoPdf, startY float64) {
 	setText(pdf, marginLeft, startY, "Tranzacție")
 	setText(pdf, 328, startY, "Preț brut")
 	setText(pdf, 424.5, startY, "Taxă Stripe")
@@ -98,36 +96,19 @@ func addPayoutTable(pdf *gopdf.GoPdf, startY float64) {
 	pdf.Line(marginLeft, startY+21.5, marginRight, startY+21.5)
 }
 
-func addPayoutProduct(pdf *gopdf.GoPdf, item models.PayoutTransaction, startY float64) {
-	setText(pdf, marginLeft, startY+16, item.TransactionId)
+func addMonthlyPayoutProduct(pdf *gopdf.GoPdf, item models.Payout, startY float64) {
+	setText(pdf, marginLeft, startY+16, item.IssueDate)
 
 	setRightAlignedText(pdf, 367, startY, item.Gross)
-	setRightAlignedText(pdf, 474, startY, item.StripeFee)
+	setRightAlignedText(pdf, 474, startY, item.StripeFees)
 	setRightAlignedText(pdf, marginRight, startY, item.Total)
 
 	pdf.SetTextColor(0, 0, 0)
-	setText(pdf, marginLeft, startY, item.ProductName)
+	setText(pdf, marginLeft, startY, item.PayoutID)
 	pdf.SetTextColor(94, 100, 112)
 }
 
-func pagesNeeded(itemsLength int) int {
-	const (
-		firstPageCapacity      = 8
-		subsequentPageCapacity = 12
-	)
-	remainingItems := itemsLength - firstPageCapacity
-	var totalPages int
-
-	if remainingItems > 0 {
-		additionalPages := (remainingItems + subsequentPageCapacity - 1) / subsequentPageCapacity
-		totalPages = 1 + additionalPages
-	} else {
-		totalPages = 1
-	}
-	return totalPages
-}
-
-func (p PayoutView) GenerateDocument() error {
+func (m MonthlyPayoutView) GenerateDocument() error {
 	pdf := gopdf.GoPdf{}
 	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
 	pdf.AddPage()
@@ -151,36 +132,36 @@ func (p PayoutView) GenerateDocument() error {
 		subsequentPageTableY   = 93
 	)
 
-	itemsLength := len(p.Payout.Items)
+	itemsLength := len(m.MonthlyPayout.Items)
 	pagesNeeded := pagesNeeded(itemsLength)
 	currentPage := 1
 
 	resetTextStyles(&pdf)
 
-	p.addHeader(&pdf, p.Payout.IssueDate)
-	p.addFooter(&pdf, pagesNeeded, currentPage)
-	addPayoutSummary(&pdf, p.Payout)
-	addPayoutTable(&pdf, firstPageTableY)
+	m.addHeader(&pdf, m.MonthlyPayout.IssueDate)
+	m.addFooter(&pdf, pagesNeeded, currentPage)
+	addMonthlyPayoutSummary(&pdf, m.MonthlyPayout)
+	addMonthlyPayoutTable(&pdf, firstPageTableY)
 
 	currentY := firstPageStartY
 	maxItemsPerPage := firstPageCapacity
 
 	var itemCounter int
-	for _, item := range p.Payout.Items {
+	for _, item := range m.MonthlyPayout.Items {
 		if itemCounter == maxItemsPerPage {
 			pdf.AddPage()
 			currentPage++
 
-			p.addSecondaryHeader(&pdf)
-			p.addFooter(&pdf, pagesNeeded, currentPage)
+			m.addSecondaryHeader(&pdf)
+			m.addFooter(&pdf, pagesNeeded, currentPage)
 
-			addPayoutTable(&pdf, subsequentPageTableY)
+			addMonthlyPayoutTable(&pdf, subsequentPageTableY)
 
 			currentY = secondPageStartY
 			itemCounter = 0
 			maxItemsPerPage = subsequentPageCapacity
 		}
-		addPayoutProduct(&pdf, item, currentY)
+		addMonthlyPayoutProduct(&pdf, item, currentY)
 		currentY += itemHeight
 		itemCounter++
 	}

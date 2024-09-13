@@ -13,8 +13,8 @@ func BenchmarkGeneratePDF(b *testing.B) {
 		IssueDate:     "12 Aug, 2024",
 		TransactionId: "pi_3Pn0hXDXCtuWOFq820psOpql",
 		ProductName:   "Donație unică de 10 lei",
-		UnitPrice:     10.00,
-		Total:         10.00,
+		UnitPrice:     "10.00 lei",
+		Total:         "10.00 lei",
 	}
 	adapter := views.InvoiceView{Invoice: &inv}
 

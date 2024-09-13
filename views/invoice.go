@@ -1,7 +1,6 @@
 package views
 
 import (
-	"fmt"
 	"path/filepath"
 
 	"github.com/diother/go-invoices/models"
@@ -62,11 +61,8 @@ func addInvoiceProduct(pdf *gopdf.GoPdf, invoice *models.Invoice) {
 
 	setText(pdf, 347, startY, "1")
 
-	unitPrice := fmt.Sprintf("%.2f lei", invoice.UnitPrice)
-	setRightAlignedText(pdf, 466, startY, unitPrice)
-
-	total := fmt.Sprintf("%.2f lei", invoice.Total)
-	setRightAlignedText(pdf, marginRight, startY, total)
+	setRightAlignedText(pdf, 466, startY, invoice.UnitPrice)
+	setRightAlignedText(pdf, marginRight, startY, invoice.Total)
 
 	pdf.SetTextColor(0, 0, 0)
 	setText(pdf, marginLeft, startY, invoice.ProductName)
@@ -80,19 +76,17 @@ func addInvoiceSummary(pdf *gopdf.GoPdf, invoice *models.Invoice) {
 	setText(pdf, 312, startY+32, "TVA:")
 	setText(pdf, 312, startY+86, "Debitat din plata dvs.:")
 
-	total := fmt.Sprintf("%.2f lei", invoice.Total)
-	setRightAlignedText(pdf, marginRight, startY+10, total)
+	setRightAlignedText(pdf, marginRight, startY+10, invoice.Total)
 
 	setText(pdf, 522, startY+32, "0.00 lei")
 
-	minusTotal := fmt.Sprintf("-%.2f lei", invoice.Total)
-	setRightAlignedText(pdf, marginRight, startY+86, minusTotal)
+	setRightAlignedText(pdf, marginRight, startY+86, "-"+invoice.Total)
 
 	pdf.SetFont("Roboto-Bold", "", 10)
 	pdf.SetTextColor(0, 0, 0)
 	setText(pdf, 312, startY+64, "Total:")
 
-	setRightAlignedText(pdf, marginRight, startY+64, total)
+	setRightAlignedText(pdf, marginRight, startY+64, invoice.Total)
 
 	setText(pdf, 312, startY+118, "Sumă datorată:")
 	setText(pdf, 521, startY+118, "0.00 lei")
@@ -104,7 +98,7 @@ func addInvoiceSummary(pdf *gopdf.GoPdf, invoice *models.Invoice) {
 	resetTextStyles(pdf)
 }
 
-func (i InvoiceView) GenerateDocument(invoice *models.Invoice) error {
+func (i InvoiceView) GenerateDocument() error {
 	pdf := gopdf.GoPdf{}
 	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
 	pdf.AddPage()
@@ -129,12 +123,12 @@ func (i InvoiceView) GenerateDocument(invoice *models.Invoice) error {
 
 	resetTextStyles(&pdf)
 
-	i.addHeader(&pdf, invoice)
+	i.addHeader(&pdf, i.Invoice)
 	i.addFooter(&pdf)
 
 	addInvoiceTable(&pdf)
-	addInvoiceProduct(&pdf, invoice)
-	addInvoiceSummary(&pdf, invoice)
+	addInvoiceProduct(&pdf, i.Invoice)
+	addInvoiceSummary(&pdf, i.Invoice)
 
 	outputDir := "./pdf"
 	pdfFile := filepath.Join(outputDir, "output.pdf")
