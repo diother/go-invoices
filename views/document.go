@@ -19,6 +19,13 @@ type PayoutView struct {
 	Payout *models.Payout
 }
 
+const (
+	marginTop    = 32
+	marginLeft   = 40
+	marginRight  = 555
+	marginBottom = 810
+)
+
 func setText(pdf *gopdf.GoPdf, x, y float64, text string) {
 	pdf.SetXY(x, y)
 	pdf.Cell(nil, text)

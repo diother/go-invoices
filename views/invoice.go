@@ -9,89 +9,99 @@ import (
 )
 
 func (i InvoiceView) addHeader(pdf *gopdf.GoPdf, invoice *models.Invoice) {
-	setText(pdf, 40, 63, "Asociația de Caritate Hintermann")
-	setText(pdf, 40, 79, "Strada Spicului, Nr. 12")
-	setText(pdf, 40, 95, "Bl. 40, Sc. A, Ap. 12")
-	setText(pdf, 40, 111, "500460")
-	setText(pdf, 40, 127, "Brașov")
-	setText(pdf, 40, 143, "România")
+	const startY = marginTop
 
-	setText(pdf, 312, 63, "ID tranzacție:")
-	setRightAlignedText(pdf, 555, 63, invoice.TransactionId)
-	setText(pdf, 312, 79, "Data emiterii:")
-	setRightAlignedText(pdf, 555, 79, invoice.IssueDate)
-	setText(pdf, 312, 95, "Client:")
-	setRightAlignedText(pdf, 555, 95, invoice.ClientName)
+	setText(pdf, marginLeft, startY+31, "Asociația de Caritate Hintermann")
+	setText(pdf, marginLeft, startY+47, "Strada Spicului, Nr. 12")
+	setText(pdf, marginLeft, startY+63, "Bl. marginLeft, Sc. A, Ap. 12")
+	setText(pdf, marginLeft, startY+79, "500460")
+	setText(pdf, marginLeft, startY+95, "Brașov")
+	setText(pdf, marginLeft, startY+111, "România")
+
+	setText(pdf, 312, startY+31, "ID tranzacție:")
+	setRightAlignedText(pdf, marginRight, startY+31, invoice.TransactionId)
+	setText(pdf, 312, startY+47, "Data emiterii:")
+	setRightAlignedText(pdf, marginRight, startY+47, invoice.IssueDate)
+	setText(pdf, 312, startY+63, "Client:")
+	setRightAlignedText(pdf, marginRight, startY+63, invoice.ClientName)
 
 	pdf.SetFont("Roboto-Bold", "", 18)
 	pdf.SetTextColor(0, 0, 0)
-	setRightAlignedText(pdf, 555, 32, "Factură")
+	setRightAlignedText(pdf, marginRight, startY, "Factură")
 
 	resetTextStyles(pdf)
 }
 
 func (i InvoiceView) addFooter(pdf *gopdf.GoPdf) {
-	setText(pdf, 347, 796, "contact@hintermann.ro")
-	setText(pdf, 492, 796, "Pagina 1 din 1")
+	const endY = marginBottom
 
-	pdf.Line(40, 775.5, 555, 775.5)
-	pdf.Line(471.5, 795, 471.5, 805)
+	setRightAlignedText(pdf, 452, endY-14, "contact@hintermann.ro")
+	setText(pdf, 492, endY-14, "Pagina 1 din 1")
+
+	pdf.Line(marginLeft, endY-36.5, marginRight, endY-36.5)
+	pdf.Line(471.5, endY-16, 471.5, endY-4)
 }
 
 func addInvoiceTable(pdf *gopdf.GoPdf) {
-	setText(pdf, 40, 195, "Serviciu")
-	setText(pdf, 312, 195, "Cantitate")
-	setText(pdf, 419, 195, "Preț unitar")
-	setText(pdf, 532, 195, "Total")
+	const startY = 195
 
-	pdf.Line(40, 216.5, 555, 216.5)
-}
+	setText(pdf, marginLeft, startY, "Serviciu")
+	setText(pdf, 312, startY, "Cantitate")
+	setText(pdf, 419, startY, "Preț unitar")
+	setText(pdf, 532, startY, "Total")
 
-func addInvoiceSummary(pdf *gopdf.GoPdf, invoice *models.Invoice) {
-	setText(pdf, 312, 321, "Subtotal:")
-	setText(pdf, 312, 343, "TVA:")
-	setText(pdf, 312, 397, "Debitat din plata dvs.:")
-
-	total := fmt.Sprintf("%.2f lei", invoice.Total)
-	setRightAlignedText(pdf, 555, 321, total)
-
-	setText(pdf, 522, 343, "0.00 lei")
-
-	minusTotal := fmt.Sprintf("-%.2f lei", invoice.Total)
-	setRightAlignedText(pdf, 555, 397, minusTotal)
-
-	pdf.SetFont("Roboto-Bold", "", 10)
-	pdf.SetTextColor(0, 0, 0)
-	setText(pdf, 312, 375, "Total:")
-
-	setRightAlignedText(pdf, 555, 375, total)
-
-	setText(pdf, 312, 429, "Sumă datorată:")
-	setText(pdf, 521, 429, "0.00 lei")
-
-	pdf.Line(40, 310, 555, 310)
-	pdf.Line(312, 364.5, 555, 364.5)
-	pdf.Line(312, 418.5, 555, 418.5)
-
-	resetTextStyles(pdf)
+	pdf.Line(marginLeft, startY+21.5, marginRight, startY+21.5)
 }
 
 func addInvoiceProduct(pdf *gopdf.GoPdf, invoice *models.Invoice) {
-	setText(pdf, 40, 253, "Fiecare donație contribuie la transformarea")
-	setText(pdf, 40, 266, "vieților familiilor românești aflate în mare nevoie.")
-	setText(pdf, 40, 279, "Ia parte și tu acum.")
+	const startY = 237
 
-	setText(pdf, 347, 237, "1")
+	setText(pdf, marginLeft, startY+16, "Fiecare donație contribuie la transformarea")
+	setText(pdf, marginLeft, startY+29, "vieților familiilor românești aflate în mare nevoie.")
+	setText(pdf, marginLeft, startY+42, "Ia parte și tu acum.")
+
+	setText(pdf, 347, startY, "1")
 
 	unitPrice := fmt.Sprintf("%.2f lei", invoice.UnitPrice)
-	setRightAlignedText(pdf, 466, 237, unitPrice)
+	setRightAlignedText(pdf, 466, startY, unitPrice)
 
 	total := fmt.Sprintf("%.2f lei", invoice.Total)
-	setRightAlignedText(pdf, 555, 237, total)
+	setRightAlignedText(pdf, marginRight, startY, total)
 
 	pdf.SetTextColor(0, 0, 0)
-	setText(pdf, 40, 237, invoice.ProductName)
+	setText(pdf, marginLeft, startY, invoice.ProductName)
 	pdf.SetTextColor(94, 100, 112)
+}
+
+func addInvoiceSummary(pdf *gopdf.GoPdf, invoice *models.Invoice) {
+	const startY = 311
+
+	setText(pdf, 312, startY+10, "Subtotal:")
+	setText(pdf, 312, startY+32, "TVA:")
+	setText(pdf, 312, startY+86, "Debitat din plata dvs.:")
+
+	total := fmt.Sprintf("%.2f lei", invoice.Total)
+	setRightAlignedText(pdf, marginRight, startY+10, total)
+
+	setText(pdf, 522, startY+32, "0.00 lei")
+
+	minusTotal := fmt.Sprintf("-%.2f lei", invoice.Total)
+	setRightAlignedText(pdf, marginRight, startY+86, minusTotal)
+
+	pdf.SetFont("Roboto-Bold", "", 10)
+	pdf.SetTextColor(0, 0, 0)
+	setText(pdf, 312, startY+64, "Total:")
+
+	setRightAlignedText(pdf, marginRight, startY+64, total)
+
+	setText(pdf, 312, startY+118, "Sumă datorată:")
+	setText(pdf, 521, startY+118, "0.00 lei")
+
+	pdf.Line(marginLeft, startY, marginRight, startY)
+	pdf.Line(312, startY+53.5, marginRight, startY+53.5)
+	pdf.Line(312, startY+107.5, marginRight, startY+107.5)
+
+	resetTextStyles(pdf)
 }
 
 func (i InvoiceView) GenerateDocument(invoice *models.Invoice) error {
@@ -108,11 +118,11 @@ func (i InvoiceView) GenerateDocument(invoice *models.Invoice) error {
 		return err
 	}
 
-	err = addImage(&pdf, "./static/hintermann-logo.png", 40, 32, 167, 17)
+	err = addImage(&pdf, "./static/hintermann-logo.png", marginLeft, 32, 167, 17)
 	if err != nil {
 		return err
 	}
-	err = addImage(&pdf, "./static/hintermann-logo-small.png", 40, 796, 138, 14)
+	err = addImage(&pdf, "./static/hintermann-logo-small.png", marginLeft, 796, 138, 14)
 	if err != nil {
 		return err
 	}
