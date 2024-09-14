@@ -1,4 +1,0 @@
-#!/bin/bash
-
-go run main.go
-thorium-browser ~/work/go-invoices/pdf/output.pdf &
