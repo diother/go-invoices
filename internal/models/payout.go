@@ -1,28 +1,10 @@
 package models
 
 type Payout struct {
-	IssueDate  string
-	PayoutDate string
-	PayoutID   string
-	Gross      string
-	StripeFees string
-	Total      string
-	Items      []PayoutTransaction
-}
-
-type MonthlyPayout struct {
-	IssueDate    string
-	ReportPeriod string
-	Gross        string
-	StripeFees   string
-	Total        string
-	Items        []Payout
-}
-
-type PayoutTransaction struct {
-	ProductName   string
-	TransactionId string
-	Gross         string
-	StripeFee     string
-	Total         string
+	ID      string    `db:"id" json:"id"`
+	Created uint64    `db:"created" json:"created"`
+	Gross   uint32    `db:"gross" json:"gross"`
+	Fee     uint32    `db:"fee" json:"fee"`
+	Net     uint32    `db:"net" json:"net"`
+	Charges []*Charge `db:"charges" json:"charges"`
 }

@@ -110,12 +110,12 @@ func addPayoutTable(pdf *gopdf.GoPdf, startY float64) {
 	pdf.Line(marginLeft, startY+21.5, marginRight, startY+21.5)
 }
 
-func addPayoutProduct(pdf *gopdf.GoPdf, item models.PayoutTransaction, startY float64) {
-	setText(pdf, marginLeft, startY+16, item.TransactionId)
+func addPayoutProduct(pdf *gopdf.GoPdf, item models.Charge, startY float64) {
+	setText(pdf, marginLeft, startY+16, item.ID)
 
 	setRightAlignedText(pdf, 367, startY, item.Gross)
-	setRightAlignedText(pdf, 474, startY, item.StripeFee)
-	setRightAlignedText(pdf, marginRight, startY, item.Total)
+	setRightAlignedText(pdf, 474, startY, item.Fee)
+	setRightAlignedText(pdf, marginRight, startY, item.Net)
 
 	pdf.SetTextColor(0, 0, 0)
 	setText(pdf, marginLeft, startY, item.ProductName)

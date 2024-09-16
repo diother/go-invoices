@@ -1,4 +1,10 @@
 #!/bin/bash
 
-go run cmd/app.go
-thorium-browser ~/work/go-invoices/internal/pdf/output/output.pdf &
+session=$(tmux display-message -p '#S')
+window=$(tmux display-message -p '#I')
+
+# tmux split-window -v
+
+tmux send-keys -t "$session:$window.0" 'docker-compose -f scripts/docker-compose.yml up' C-m
+# tmux send-keys -t "$session:$window.1" 'tailwindcss -i ./static/css/tailwind.css -o ./static/css/output.css --watch' C-m
+

@@ -5,6 +5,13 @@ import (
 	"github.com/signintech/gopdf"
 )
 
+const (
+	marginTop    = 32
+	marginLeft   = 40
+	marginRight  = 555
+	marginBottom = 810
+)
+
 type DocumentPdf interface {
 	GenerateDocument()
 	addHeader()
@@ -22,13 +29,6 @@ type PayoutPdf struct {
 type MonthlyPayoutPdf struct {
 	MonthlyPayout *models.MonthlyPayout
 }
-
-const (
-	marginTop    = 32
-	marginLeft   = 40
-	marginRight  = 555
-	marginBottom = 810
-)
 
 func setText(pdf *gopdf.GoPdf, x, y float64, text string) {
 	pdf.SetXY(x, y)
