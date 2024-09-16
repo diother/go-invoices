@@ -1,10 +1,18 @@
 #!/bin/bash
 
 session=$(tmux display-message -p '#S')
-window=$(tmux display-message -p '#I')
+original_window=$(tmux display-message -p '#I')
 
-# tmux split-window -v
+tmux new-window -t "$session:" 
 
-tmux send-keys -t "$session:$window.0" 'docker-compose -f scripts/docker-compose.yml up' C-m
-# tmux send-keys -t "$session:$window.1" 'tailwindcss -i ./static/css/tailwind.css -o ./static/css/output.css --watch' C-m
+sleep 1
 
+new_window=$(tmux display-message -p '#I')
+tmux send-keys -t "$session:$new_window" 'docker-compose -f scripts/docker-compose.yml up' C-m
+
+sleep 5 
+
+tmux select-window -t "$session:$original_window"
+
+tmux send-keys 'cd scripts' C-m
+tmux send-keys 'docker-compose exec db mysql -uuser -ppassword database' C-m
