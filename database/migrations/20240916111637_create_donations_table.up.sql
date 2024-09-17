@@ -1,4 +1,4 @@
-CREATE TABLE charges (
+CREATE TABLE donations (
     id VARCHAR(255) PRIMARY KEY,
     created BIGINT UNSIGNED,
     gross INT UNSIGNED,

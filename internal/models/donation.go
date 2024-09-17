@@ -1,6 +1,6 @@
 package models
 
-type Charge struct {
+type Donation struct {
 	ID          string `db:"id" json:"id"`
 	Created     uint64 `db:"created" json:"created"`
 	Gross       uint32 `db:"gross" json:"gross"`

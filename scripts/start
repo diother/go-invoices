@@ -8,11 +8,20 @@ tmux new-window -t "$session:"
 sleep 1
 
 new_window=$(tmux display-message -p '#I')
-tmux send-keys -t "$session:$new_window" 'docker-compose -f scripts/docker-compose.yml up' C-m
+
+tmux split-window -v
+tmux split-window -v
+
+tmux send-keys -t "$session:$window.2" 'docker-compose -f scripts/docker-compose.yml up' C-m
+tmux send-keys -t "$session:$window.1" 'stripe listen --skip-verify --forward-to localhost:8080/webhook --events checkout.session.completed' C-m
 
 sleep 5 
+
+tmux send-keys -t "$session:$window.0" 'air' C-m
 
 tmux select-window -t "$session:$original_window"
 
 tmux send-keys 'cd scripts' C-m
 tmux send-keys 'docker-compose exec db mysql -uuser -ppassword database' C-m
+
+# stripe listen --skip-verify --forward-to localhost:8080/charges
