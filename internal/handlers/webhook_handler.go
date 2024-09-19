@@ -6,12 +6,17 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/stripe/stripe-go"
-	"github.com/stripe/stripe-go/webhook"
+	"github.com/stripe/stripe-go/v79"
+	"github.com/stripe/stripe-go/v79/webhook"
 )
 
-type DonationService interface{}
-type PayoutService interface{}
+type DonationService interface {
+	ProcessDonation(charge *stripe.Charge) error
+}
+
+type PayoutService interface {
+	ProcessPayout(payout *stripe.Payout) error
+}
 
 type WebhookHandler struct {
 	donation DonationService
@@ -27,7 +32,6 @@ func NewWebhookHandler(donation DonationService, payout PayoutService) *WebhookH
 
 func (h *WebhookHandler) HandleWebhooks(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		log.Println("Request not of POST type")
 		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
 		return
 	}
@@ -47,18 +51,39 @@ func (h *WebhookHandler) HandleWebhooks(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if event.Type != "checkout.session.completed" {
-		log.Println("Unsupported event type")
-		http.Error(w, "Unsupported event type", http.StatusBadRequest)
-		return
-	}
+	switch event.Type {
+	case "charge.updated":
+		var charge stripe.Charge
+		err = json.Unmarshal(event.Data.Raw, &charge)
+		if err != nil {
+			log.Printf("Invalid JSON: %v\n", err)
+			http.Error(w, "Invalid JSON", http.StatusBadRequest)
+			return
+		}
+		err = h.donation.ProcessDonation(&charge)
+		if err != nil {
+			log.Printf("Problem with the servers: %v\n", err)
+			http.Error(w, "Problem with the servers", http.StatusInternalServerError)
+			return
+		}
 
-	var checkoutSession stripe.CheckoutSession
-	err = json.Unmarshal(event.Data.Raw, &checkoutSession)
-	if err != nil {
-		log.Printf("Invalid JSON: %v\n", err)
-		http.Error(w, "Invalid JSON", http.StatusBadRequest)
-		return
+	case "payout.reconciliation_completed":
+		var payout stripe.Payout
+		err = json.Unmarshal(event.Data.Raw, &payout)
+		if err != nil {
+			log.Printf("Invalid JSON: %v\n", err)
+			http.Error(w, "Invalid JSON", http.StatusBadRequest)
+			return
+		}
+		err = h.payout.ProcessPayout(&payout)
+		if err != nil {
+			log.Printf("Problem with the servers: %v\n", err)
+			http.Error(w, "Problem with the servers", http.StatusInternalServerError)
+			return
+		}
+
+	default:
+		log.Println("Unsupported event type:", event.Type)
 	}
 
 	w.WriteHeader(http.StatusOK)

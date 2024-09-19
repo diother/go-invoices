@@ -3,8 +3,8 @@ package scripts
 import (
 	"fmt"
 
-	"github.com/stripe/stripe-go"
-	"github.com/stripe/stripe-go/balancetransaction"
+	"github.com/stripe/stripe-go/v79"
+	"github.com/stripe/stripe-go/v79/balancetransaction"
 )
 
 func getStripe() {

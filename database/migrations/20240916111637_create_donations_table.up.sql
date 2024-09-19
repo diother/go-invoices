@@ -4,7 +4,6 @@ CREATE TABLE donations (
     gross INT UNSIGNED,
     fee INT UNSIGNED,
     net INT UNSIGNED,
-    product VARCHAR(255),
     client_name VARCHAR(255),
     client_email VARCHAR(255),
     payout_id VARCHAR(255),

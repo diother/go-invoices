@@ -22,7 +22,7 @@ func InitDB(dsn string) (*sqlx.DB, error) {
 func ApplyMigrations(dsn string) error {
 	dbURL := "mysql://" + dsn
 	m, err := migrate.New(
-		"file://db/migrations",
+		"file://database/migrations",
 		dbURL,
 	)
 	if err != nil {
