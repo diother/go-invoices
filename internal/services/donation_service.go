@@ -28,6 +28,10 @@ func (d *DonationService) ProcessDonation(charge *stripe.Charge) error {
 		return fmt.Errorf("Transaction fetch error: %w", err)
 	}
 
+	if err = validateTransaction(transaction); err != nil {
+		return fmt.Errorf("Transaction validation error: %w", err)
+	}
+
 	donation := models.NewDonation(
 		transaction.ID,
 		uint64(transaction.Created),
@@ -48,11 +52,17 @@ func validateCharge(charge *stripe.Charge) error {
 	if charge.Status != "succeeded" {
 		return fmt.Errorf(errors.ErrChargeStatusFailed)
 	}
+	if charge.BillingDetails == nil {
+		return fmt.Errorf(errors.ErrBillingDetailsMissing)
+	}
 	if charge.BillingDetails.Name == "" {
 		return fmt.Errorf(errors.ErrClientNameMissing)
 	}
 	if charge.BillingDetails.Email == "" {
 		return fmt.Errorf(errors.ErrClientEmailMissing)
+	}
+	if charge.BalanceTransaction == nil {
+		return fmt.Errorf(errors.ErrBalanceTransactionMissing)
 	}
 	if charge.BalanceTransaction.ID == "" {
 		return fmt.Errorf(errors.ErrBalanceTransactionIDMissing)
@@ -64,9 +74,6 @@ func fetchTransaction(id string) (*stripe.BalanceTransaction, error) {
 	params := &stripe.BalanceTransactionParams{}
 	transaction, err := balancetransaction.Get(id, params)
 	if err != nil {
-		return nil, err
-	}
-	if err = validateTransaction(transaction); err != nil {
 		return nil, err
 	}
 	return transaction, nil

@@ -9,7 +9,7 @@ func (r *WebhookRepository) InsertDonation(donation *models.Donation) error {
     INSERT INTO donations (id, created, gross, fee, net, client_name, client_email, payout_id)
 	VALUES (:id, :created, :gross, :fee, :net, :client_name, :client_email, :payout_id)
     `
-	_, err := r.db.NamedExec(query, donation)
+	_, err := r.execNamed(query, donation)
 	return err
 }
 
@@ -19,7 +19,7 @@ func (r *WebhookRepository) UpdateRelatedPayout(donation *models.Donation) (bool
 	SET payout_id = :payout_id
 	WHERE id = :id
 	`
-	result, err := r.db.NamedExec(query, donation)
+	result, err := r.execNamed(query, donation)
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {

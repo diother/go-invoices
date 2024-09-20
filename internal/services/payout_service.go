@@ -72,8 +72,7 @@ func (p *PayoutService) ProcessPayout(payout *stripe.Payout) error {
 		}
 	}()
 
-	err = p.repo.InsertPayout(payoutModel)
-	if err != nil {
+	if err = p.repo.InsertPayout(payoutModel); err != nil {
 		return fmt.Errorf("Database payout insertion failed: %w", err)
 	}
 
@@ -81,7 +80,7 @@ func (p *PayoutService) ProcessPayout(payout *stripe.Payout) error {
 		donationModel := models.NewDonation(transactions[i].ID, 0, 0, 0, 0, "", "", sql.NullString{String: payoutModel.ID, Valid: true})
 		updated, err := p.repo.UpdateRelatedPayout(donationModel)
 		if err != nil {
-			return fmt.Errorf("Update related payout failed: %w", err)
+			return fmt.Errorf("Update related payout failed for %s: %w", transactions[i].ID, err)
 		}
 		if updated {
 			continue
@@ -89,7 +88,11 @@ func (p *PayoutService) ProcessPayout(payout *stripe.Payout) error {
 
 		charge, err := fetchRelatedCharge(transactions[i])
 		if err != nil {
-			return fmt.Errorf("Related charge fetch failed: %w", err)
+			return fmt.Errorf("Related charge fetch failed for %s: %w", transactions[i].ID, err)
+		}
+
+		if err = validateRelatedCharge(charge); err != nil {
+			return fmt.Errorf("Related charge validation failed for %s: %w", transactions[i].ID, err)
 		}
 
 		donationModel = models.NewDonation(
@@ -111,10 +114,10 @@ func (p *PayoutService) ProcessPayout(payout *stripe.Payout) error {
 
 func validatePayout(payout *stripe.Payout) error {
 	if payout.Status != "paid" {
-		return fmt.Errorf("Payout is not paid")
+		return fmt.Errorf(errors.ErrPayoutNotPaid)
 	}
 	if payout.ID == "" {
-		return fmt.Errorf("Payout ID is missing")
+		return fmt.Errorf(errors.ErrPayoutIDMissing)
 	}
 	return nil
 }
@@ -122,7 +125,6 @@ func validatePayout(payout *stripe.Payout) error {
 func fetchTransactions(id string) ([]*stripe.BalanceTransaction, error) {
 	params := &stripe.BalanceTransactionListParams{}
 	params.Payout = &id
-	params.AddExpand("data.source")
 
 	iter := balancetransaction.List(params)
 
@@ -141,16 +143,19 @@ func fetchTransactions(id string) ([]*stripe.BalanceTransaction, error) {
 }
 
 func validatePayoutTransaction(transaction *stripe.BalanceTransaction) error {
-	if transaction.Source.Type != "payout" {
-		return fmt.Errorf(errors.ErrTransactionPayoutFailed+". Current type: %s", transaction.Source.Type)
+	if transaction.Type != "payout" {
+		return fmt.Errorf(errors.ErrTransactionPayoutFailed+". Current type: %s", transaction.Type)
 	}
 	err := validateTransaction(transaction)
 	return err
 }
 
 func validateChargeTransaction(transaction *stripe.BalanceTransaction) error {
-	if transaction.Source.Type != "charge" {
-		return fmt.Errorf(errors.ErrTransactionChargeFailed+". Current type: %s", transaction.Source.Type)
+	if transaction.Type != "charge" {
+		return fmt.Errorf(errors.ErrTransactionChargeFailed+". Current type: %s", transaction.Type)
+	}
+	if transaction.Source == nil {
+		return fmt.Errorf(errors.ErrChargeTransactionSourceMissing)
 	}
 	if transaction.Source.ID == "" {
 		return fmt.Errorf(errors.ErrTransactionChargeIDMissing)
@@ -183,4 +188,17 @@ func fetchRelatedCharge(transaction *stripe.BalanceTransaction) (*stripe.Charge,
 		return nil, err
 	}
 	return charge, nil
+}
+
+func validateRelatedCharge(charge *stripe.Charge) error {
+	if charge.BillingDetails == nil {
+		return fmt.Errorf(errors.ErrBillingDetailsMissing)
+	}
+	if charge.BillingDetails.Name == "" {
+		return fmt.Errorf(errors.ErrClientNameMissing)
+	}
+	if charge.BillingDetails.Email == "" {
+		return fmt.Errorf(errors.ErrClientEmailMissing)
+	}
+	return nil
 }

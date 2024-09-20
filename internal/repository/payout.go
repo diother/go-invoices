@@ -9,6 +9,6 @@ func (r *WebhookRepository) InsertPayout(payout *models.Payout) error {
     INSERT INTO payouts (id, created, gross, fee, net)
     VALUES (:id, :created, :gross, :fee, :net)
     `
-	_, err := r.db.NamedExec(query, payout)
+	_, err := r.execNamed(query, payout)
 	return err
 }

@@ -9,7 +9,7 @@ import (
 
 type WebhookRepository struct {
 	db *sqlx.DB
-	tx *sql.Tx
+	tx *sqlx.Tx
 }
 
 func NewWebhookRepository(db *sqlx.DB) *WebhookRepository {
@@ -17,7 +17,7 @@ func NewWebhookRepository(db *sqlx.DB) *WebhookRepository {
 }
 
 func (r *WebhookRepository) BeginTransaction() error {
-	tx, err := r.db.Begin()
+	tx, err := r.db.Beginx()
 	if err != nil {
 		return err
 	}
@@ -41,4 +41,11 @@ func (r *WebhookRepository) Rollback() error {
 	err := r.tx.Rollback()
 	r.tx = nil
 	return err
+}
+
+func (r *WebhookRepository) execNamed(query string, arg interface{}) (sql.Result, error) {
+	if r.tx != nil {
+		return r.tx.NamedExec(query, arg)
+	}
+	return r.db.NamedExec(query, arg)
 }
