@@ -10,3 +10,16 @@ type Donation struct {
 	ClientEmail string `db:"client_email"`
 	PayoutID    string `db:"payout_id"`
 }
+
+func NewDonation(id string, created uint64, gross, fee, net uint32, clientName, clientEmail, payoutID string) *Donation {
+	return &Donation{
+		ID:          id,
+		Created:     created,
+		Gross:       gross,
+		Fee:         fee,
+		Net:         net,
+		ClientName:  clientName,
+		ClientEmail: clientEmail,
+		PayoutID:    payoutID,
+	}
+}

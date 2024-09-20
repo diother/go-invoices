@@ -22,7 +22,7 @@ func (r *DonationRepositoryMySQL) Insert(donation *models.Donation) error {
 	return err
 }
 
-func (r *DonationRepositoryMySQL) UpdatePayout(donation *models.Donation) (bool, error) {
+func (r *DonationRepositoryMySQL) UpdateRelatedPayout(donation *models.Donation) (bool, error) {
 	query := `
 	UPDATE donations
 	SET payout_id = :payout_id
@@ -34,7 +34,6 @@ func (r *DonationRepositoryMySQL) UpdatePayout(donation *models.Donation) (bool,
 	if err != nil {
 		return false, err
 	}
-
 	if rowsAffected == 0 {
 		return false, nil
 	}

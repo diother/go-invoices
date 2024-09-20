@@ -19,14 +19,16 @@ type PayoutService interface {
 }
 
 type WebhookHandler struct {
-	donation DonationService
-	payout   PayoutService
+	donation       DonationService
+	payout         PayoutService
+	endpointSecret string
 }
 
-func NewWebhookHandler(donation DonationService, payout PayoutService) *WebhookHandler {
+func NewWebhookHandler(donation DonationService, payout PayoutService, secret string) *WebhookHandler {
 	return &WebhookHandler{
-		donation: donation,
-		payout:   payout,
+		donation:       donation,
+		payout:         payout,
+		endpointSecret: secret,
 	}
 }
 
@@ -43,8 +45,7 @@ func (h *WebhookHandler) HandleWebhooks(w http.ResponseWriter, r *http.Request) 
 	}
 	defer r.Body.Close()
 
-	endpointSecret := "whsec_f49cf6c9295d48e6f73148435e254dec38d407fa911013a86b070725bc74469d"
-	event, err := webhook.ConstructEvent(body, r.Header.Get("Stripe-Signature"), endpointSecret)
+	event, err := webhook.ConstructEvent(body, r.Header.Get("Stripe-Signature"), h.endpointSecret)
 	if err != nil {
 		log.Printf("Invalid signature: %v\n", err)
 		http.Error(w, "Invalid signature", http.StatusBadRequest)
@@ -62,8 +63,8 @@ func (h *WebhookHandler) HandleWebhooks(w http.ResponseWriter, r *http.Request) 
 		}
 		err = h.donation.ProcessDonation(&charge)
 		if err != nil {
-			log.Printf("Problem with the servers: %v\n", err)
-			http.Error(w, "Problem with the servers", http.StatusInternalServerError)
+			log.Printf("Service error: %v\n", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
 
@@ -77,8 +78,8 @@ func (h *WebhookHandler) HandleWebhooks(w http.ResponseWriter, r *http.Request) 
 		}
 		err = h.payout.ProcessPayout(&payout)
 		if err != nil {
-			log.Printf("Problem with the servers: %v\n", err)
-			http.Error(w, "Problem with the servers", http.StatusInternalServerError)
+			log.Printf("Service error: %v\n", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
 

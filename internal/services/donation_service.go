@@ -1,8 +1,9 @@
 package services
 
 import (
-	"errors"
+	"fmt"
 
+	"github.com/diother/go-invoices/internal/errors"
 	"github.com/diother/go-invoices/internal/models"
 	"github.com/stripe/stripe-go/v79"
 	"github.com/stripe/stripe-go/v79/balancetransaction"
@@ -10,67 +11,89 @@ import (
 
 type DonationRepository interface {
 	Insert(donation *models.Donation) error
-	UpdatePayout(donation *models.Donation) (bool, error)
+	UpdateRelatedPayout(donation *models.Donation) (bool, error)
 }
 
-type DonationServiceImpl struct {
+type DonationService struct {
 	repo DonationRepository
 }
 
-func NewDonationServiceImpl(repo DonationRepository) *DonationServiceImpl {
-	return &DonationServiceImpl{repo: repo}
+func NewDonationService(repo DonationRepository) *DonationService {
+	return &DonationService{repo: repo}
 }
 
-func (d *DonationServiceImpl) ProcessDonation(charge *stripe.Charge) error {
-	stripe.Key = "sk_test_51PVfUvDXCtuWOFq8ADmnd1iQEONLKIC6p1m1tALD67I6Ew4gRgOjoYGR7B5XK8hN0uc7iLE2Mbl9BedtgLIQubXU00XWzh1hmB"
-
-	if charge.Status != "succeeded" {
-		return errors.New("Charge did not succeed")
-	}
-
-	clientName := charge.BillingDetails.Name
-	clientEmail := charge.BillingDetails.Email
-	if clientName == "" || clientEmail == "" {
-		return errors.New("Client name or email is missing")
-	}
-
-	paymentIntentId := charge.PaymentIntent.ID
-	balanceTransactionId := charge.BalanceTransaction.ID
-	if paymentIntentId == "" || balanceTransactionId == "" {
-		return errors.New("PaymentIntent.ID or BalanceTransaction.ID is missing")
-	}
-
-	balanceTransaction, err := fetchBalanceTransaction(balanceTransactionId)
+func (d *DonationService) ProcessDonation(charge *stripe.Charge) error {
+	err := validateCharge(charge)
 	if err != nil {
-		return err
+		return fmt.Errorf("Charge validation error: %w", err)
 	}
 
-	donationModel := d.buildDonationModel(charge, balanceTransaction)
-	err = d.repo.Insert(donationModel)
+	transaction, err := fetchTransaction(charge.BalanceTransaction.ID)
 	if err != nil {
-		return err
+		return fmt.Errorf("Transaction fetch error: %w", err)
 	}
 
+	donation := models.NewDonation(
+		transaction.ID,
+		uint64(transaction.Created),
+		uint32(transaction.Amount),
+		uint32(transaction.Fee),
+		uint32(transaction.Net),
+		charge.BillingDetails.Name,
+		charge.BillingDetails.Email,
+		"",
+	)
+	err = d.repo.Insert(donation)
+	if err != nil {
+		return fmt.Errorf("Database donation insertion failed: %w", err)
+	}
 	return nil
 }
 
-func fetchBalanceTransaction(id string) (*stripe.BalanceTransaction, error) {
+func validateCharge(charge *stripe.Charge) error {
+	if charge.Status != "succeeded" {
+		return fmt.Errorf(errors.ErrChargeStatusFailed)
+	}
+	if charge.BillingDetails.Name == "" {
+		return fmt.Errorf(errors.ErrClientNameMissing)
+	}
+	if charge.BillingDetails.Email == "" {
+		return fmt.Errorf(errors.ErrClientEmailMissing)
+	}
+	if charge.BalanceTransaction.ID == "" {
+		return fmt.Errorf(errors.ErrBalanceTransactionIDMissing)
+	}
+	return nil
+}
+
+func fetchTransaction(id string) (*stripe.BalanceTransaction, error) {
 	params := &stripe.BalanceTransactionParams{}
-	balanceTransaction, err := balancetransaction.Get(id, params)
+	transaction, err := balancetransaction.Get(id, params)
 	if err != nil {
 		return nil, err
 	}
-	return balanceTransaction, nil
+	err = validateTransaction(transaction)
+	if err != nil {
+		return nil, err
+	}
+	return transaction, nil
 }
 
-func (d *DonationServiceImpl) buildDonationModel(charge *stripe.Charge, balanceTransaction *stripe.BalanceTransaction) *models.Donation {
-	return &models.Donation{
-		ID:          balanceTransaction.ID,
-		Created:     uint64(balanceTransaction.Created),
-		Gross:       uint32(balanceTransaction.Amount),
-		Fee:         uint32(balanceTransaction.Fee),
-		Net:         uint32(balanceTransaction.Net),
-		ClientName:  charge.BillingDetails.Name,
-		ClientEmail: charge.BillingDetails.Email,
+func validateTransaction(transaction *stripe.BalanceTransaction) error {
+	if transaction.ID == "" {
+		return fmt.Errorf(errors.ErrTransactionIDMissing)
 	}
+	if transaction.Created == 0 {
+		return fmt.Errorf(errors.ErrTransactionCreatedMissing)
+	}
+	if transaction.Amount == 0 {
+		return fmt.Errorf(errors.ErrTransactionAmountMissing)
+	}
+	if transaction.Fee == 0 {
+		return fmt.Errorf(errors.ErrTransactionFeeMissing)
+	}
+	if transaction.Net == 0 {
+		return fmt.Errorf(errors.ErrTransactionNetMissing)
+	}
+	return nil
 }
