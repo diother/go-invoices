@@ -8,7 +8,6 @@ const (
 	ErrTransactionIDMissing        = "Transaction ID is missing"
 	ErrTransactionCreatedMissing   = "Transaction creation date is missing"
 	ErrTransactionAmountMissing    = "Transaction amount is missing or zero"
-	ErrTransactionFeeMissing       = "Transaction fee is missing or zero"
 	ErrTransactionNetMissing       = "Transaction net amount is missing or zero"
 	ErrTransactionPayoutFailed     = "Transaction is not of type payout"
 	ErrTransactionChargeFailed     = "Transaction is not of type charge"

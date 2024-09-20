@@ -1,6 +1,7 @@
 package services
 
 import (
+	"database/sql"
 	"fmt"
 
 	"github.com/diother/go-invoices/internal/errors"
@@ -9,22 +10,16 @@ import (
 	"github.com/stripe/stripe-go/v79/balancetransaction"
 )
 
-type DonationRepository interface {
-	Insert(donation *models.Donation) error
-	UpdateRelatedPayout(donation *models.Donation) (bool, error)
-}
-
 type DonationService struct {
-	repo DonationRepository
+	repo WebhookRepository
 }
 
-func NewDonationService(repo DonationRepository) *DonationService {
+func NewDonationService(repo WebhookRepository) *DonationService {
 	return &DonationService{repo: repo}
 }
 
 func (d *DonationService) ProcessDonation(charge *stripe.Charge) error {
-	err := validateCharge(charge)
-	if err != nil {
+	if err := validateCharge(charge); err != nil {
 		return fmt.Errorf("Charge validation error: %w", err)
 	}
 
@@ -41,10 +36,9 @@ func (d *DonationService) ProcessDonation(charge *stripe.Charge) error {
 		uint32(transaction.Net),
 		charge.BillingDetails.Name,
 		charge.BillingDetails.Email,
-		"",
+		sql.NullString{Valid: false},
 	)
-	err = d.repo.Insert(donation)
-	if err != nil {
+	if err = d.repo.InsertDonation(donation); err != nil {
 		return fmt.Errorf("Database donation insertion failed: %w", err)
 	}
 	return nil
@@ -72,8 +66,7 @@ func fetchTransaction(id string) (*stripe.BalanceTransaction, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = validateTransaction(transaction)
-	if err != nil {
+	if err = validateTransaction(transaction); err != nil {
 		return nil, err
 	}
 	return transaction, nil
@@ -88,9 +81,6 @@ func validateTransaction(transaction *stripe.BalanceTransaction) error {
 	}
 	if transaction.Amount == 0 {
 		return fmt.Errorf(errors.ErrTransactionAmountMissing)
-	}
-	if transaction.Fee == 0 {
-		return fmt.Errorf(errors.ErrTransactionFeeMissing)
 	}
 	if transaction.Net == 0 {
 		return fmt.Errorf(errors.ErrTransactionNetMissing)

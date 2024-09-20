@@ -55,14 +55,12 @@ func (h *WebhookHandler) HandleWebhooks(w http.ResponseWriter, r *http.Request) 
 	switch event.Type {
 	case "charge.updated":
 		var charge stripe.Charge
-		err = json.Unmarshal(event.Data.Raw, &charge)
-		if err != nil {
+		if err = json.Unmarshal(event.Data.Raw, &charge); err != nil {
 			log.Printf("Invalid JSON: %v\n", err)
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
-		err = h.donation.ProcessDonation(&charge)
-		if err != nil {
+		if err = h.donation.ProcessDonation(&charge); err != nil {
 			log.Printf("Service error: %v\n", err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
@@ -70,14 +68,12 @@ func (h *WebhookHandler) HandleWebhooks(w http.ResponseWriter, r *http.Request) 
 
 	case "payout.reconciliation_completed":
 		var payout stripe.Payout
-		err = json.Unmarshal(event.Data.Raw, &payout)
-		if err != nil {
+		if err = json.Unmarshal(event.Data.Raw, &payout); err != nil {
 			log.Printf("Invalid JSON: %v\n", err)
 			http.Error(w, "Invalid JSON", http.StatusBadRequest)
 			return
 		}
-		err = h.payout.ProcessPayout(&payout)
-		if err != nil {
+		if err = h.payout.ProcessPayout(&payout); err != nil {
 			log.Printf("Service error: %v\n", err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
