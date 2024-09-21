@@ -15,7 +15,7 @@ const (
 	ErrTransactionPayoutMismatch      = "Payout amount does not match total charges minus fees"
 	ErrTransactionChargeIDMissing     = "Charge transaction source ID is missing"
 	ErrBillingDetailsMissing          = "Billing details are missing"
-	ErrBalanceTransactionMissing      = "Billing details are missing"
+	ErrBalanceTransactionMissing      = "Balance transaction is missing"
 	ErrChargeTransactionSourceMissing = "Charge transaction source is missing"
 	ErrPayoutNotPaid                  = "Payout is not paid"
 	ErrPayoutIDMissing                = "Payout ID is missing"
