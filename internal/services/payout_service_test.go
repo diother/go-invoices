@@ -1,6 +1,7 @@
 package services
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/diother/go-invoices/internal/errors"
@@ -209,6 +210,99 @@ func TestValidateFeeTransaction(t *testing.T) {
 			}
 			if tc.expected != "" && (err == nil || err.Error() != tc.expected) {
 				t.Errorf("Expected error: %v, got: %v", tc.expected, err)
+			}
+		})
+	}
+}
+
+func TestValidateRelatedTransactions(t *testing.T) {
+	validPayout := &stripe.BalanceTransaction{ID: "txn_123456", Type: "payout", Created: 1234567890, Amount: -1000, Fee: 0, Net: -1000}
+	validCharge := &stripe.BalanceTransaction{ID: "txn_123456", Type: "charge", Created: 1234567890, Amount: 1000, Fee: 100, Net: 900, Source: &stripe.BalanceTransactionSource{ID: "src_123456"}}
+	validFee := &stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Created: 1234567890, Amount: -100, Fee: 0, Net: -100}
+
+	testCases := map[string]struct {
+		input    []*stripe.BalanceTransaction
+		expected string
+	}{
+		"validTransactions": {
+			input:    []*stripe.BalanceTransaction{validPayout, validCharge, validFee},
+			expected: "",
+		},
+		"insufficientTransactions": {
+			input:    []*stripe.BalanceTransaction{validPayout},
+			expected: errors.ErrPayoutListInsufficientTransactions,
+		},
+		"payoutTransactionInvalid": {
+			input:    []*stripe.BalanceTransaction{validCharge, validCharge},
+			expected: errors.ErrPayoutListPayoutTransactionInvalid,
+		},
+		"relatedTransactionInvalid": {
+			input:    []*stripe.BalanceTransaction{validPayout, {Type: "charge", ID: ""}},
+			expected: errors.ErrPayoutListRelatedTransactionInvalid,
+		},
+		"unexpectedType": {
+			input:    []*stripe.BalanceTransaction{validPayout, {Type: "unexpected"}},
+			expected: errors.ErrPayoutListUnexpectedTransaction,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			err := validateRelatedTransactions(tc.input)
+			if tc.expected == "" && err != nil {
+				t.Errorf("Expected no error, got: %v", err)
+			}
+			if tc.expected != "" && (err == nil || !strings.Contains(err.Error(), tc.expected)) {
+				t.Errorf("Expected error containing: %v, got: %v", tc.expected, err)
+			}
+		})
+	}
+}
+
+func TestValidateMatchingSums(t *testing.T) {
+	validPayout := &stripe.BalanceTransaction{ID: "txn_123456", Type: "payout", Created: 1234567890, Amount: -800, Fee: 0, Net: -800}
+	validCharge := &stripe.BalanceTransaction{ID: "txn_123456", Type: "charge", Created: 1234567890, Amount: 1000, Fee: 100, Net: 900, Source: &stripe.BalanceTransactionSource{ID: "src_123456"}}
+	validFee := &stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Created: 1234567890, Amount: -100, Fee: 0, Net: -100}
+
+	testCases := map[string]struct {
+		input         []*stripe.BalanceTransaction
+		expectedErr   string
+		expectedGross int64
+		expectedFee   int64
+		expectedNet   int64
+	}{
+		"validRelatedTransactions": {
+			input:         []*stripe.BalanceTransaction{validPayout, validCharge, validFee},
+			expectedErr:   "",
+			expectedGross: 1000,
+			expectedFee:   200,
+			expectedNet:   800,
+		},
+		"payoutMismatch": {
+			input:       []*stripe.BalanceTransaction{validPayout, validCharge, validFee, validFee},
+			expectedErr: errors.ErrPayoutListSumMismatch,
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			gross, fee, net, err := validateMatchingSums(tc.input)
+			if tc.expectedErr == "" && err != nil {
+				t.Errorf("Expected no error, got: %v", err)
+			}
+			if tc.expectedErr != "" && (err == nil || !strings.Contains(err.Error(), tc.expectedErr)) {
+				t.Errorf("Expected error containing: %v, got: %v", tc.expectedErr, err)
+			}
+			if err == nil {
+				if gross != tc.expectedGross {
+					t.Errorf("Expected gross: %d, got: %d", tc.expectedGross, gross)
+				}
+				if fee != tc.expectedFee {
+					t.Errorf("Expected fee: %d, got: %d", tc.expectedFee, fee)
+				}
+				if net != tc.expectedNet {
+					t.Errorf("Expected net: %d, got: %d", tc.expectedNet, net)
+				}
 			}
 		})
 	}

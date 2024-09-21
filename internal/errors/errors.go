@@ -19,8 +19,11 @@ const (
 // Payout list validation errors
 // NOTE: in work
 const (
-	ErrPayoutListTransactionMismatch = "payout amount does not match total charges minus fees"
-	ErrPayoutListTransactionInvalid  = "transaction list expected at least 2 transactions"
+	ErrPayoutListSumMismatch               = "payout amount does not match total charges minus fees"
+	ErrPayoutListInsufficientTransactions  = "transaction list expected at least 2 transactions"
+	ErrPayoutListPayoutTransactionInvalid  = "payout transaction validation failed"
+	ErrPayoutListRelatedTransactionInvalid = "related transaction validation failed"
+	ErrPayoutListUnexpectedTransaction     = "unexpected transaction type"
 )
 
 // General transaction-related errors
