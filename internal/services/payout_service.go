@@ -39,10 +39,6 @@ func (p *PayoutService) ProcessPayout(payout *stripe.Payout) (err error) {
 		return fmt.Errorf("Related transactions fetch failed: %w", err)
 	}
 
-	if err = validatePayoutTransaction(transactions[0]); err != nil {
-		return fmt.Errorf("Payout transaction validation failed: %w", err)
-	}
-
 	if err = validateRelatedTransactions(transactions); err != nil {
 		return fmt.Errorf("Related transactions validation failed: %w", err)
 	}
@@ -123,20 +119,16 @@ func fetchRelatedTransactions(id string) ([]*stripe.BalanceTransaction, error) {
 	if err := iter.Err(); err != nil {
 		return nil, err
 	}
-	if len(transactions) < 2 {
-		return nil, fmt.Errorf(errors.ErrTransactionListMissing)
-	}
 	return transactions, nil
 }
 
-func validatePayoutTransaction(transaction *stripe.BalanceTransaction) error {
-	if transaction.Type != "payout" {
-		return fmt.Errorf(errors.ErrTransactionPayoutFailed+". Current type: %s", transaction.Type)
-	}
-	return validateTransaction(transaction)
-}
-
 func validateRelatedTransactions(transactions []*stripe.BalanceTransaction) error {
+	if len(transactions) < 2 {
+		return fmt.Errorf(errors.ErrTransactionListMissing)
+	}
+	if err := validatePayoutTransaction(transactions[0]); err != nil {
+		return fmt.Errorf("Payout transaction validation failed: %w", err)
+	}
 	for i := 1; i < len(transactions); i++ {
 		switch transactions[i].Type {
 		case "charge":
@@ -152,6 +144,13 @@ func validateRelatedTransactions(transactions []*stripe.BalanceTransaction) erro
 		}
 	}
 	return nil
+}
+
+func validatePayoutTransaction(transaction *stripe.BalanceTransaction) error {
+	if transaction.Type != "payout" {
+		return fmt.Errorf(errors.ErrTransactionPayoutFailed+". Current type: %s", transaction.Type)
+	}
+	return validateTransaction(transaction)
 }
 
 func validateChargeTransaction(transaction *stripe.BalanceTransaction) error {
@@ -179,7 +178,6 @@ func validateFeeTransaction(transaction *stripe.BalanceTransaction) error {
 
 func validateMatchingSums(transactions []*stripe.BalanceTransaction) (int64, int64, int64, error) {
 	var payoutGross, payoutFee int64
-
 	for i := 1; i < len(transactions); i++ {
 		switch transactions[i].Type {
 		case "charge":
@@ -198,28 +196,6 @@ func validateMatchingSums(transactions []*stripe.BalanceTransaction) (int64, int
 		return 0, 0, 0, fmt.Errorf(errors.ErrTransactionPayoutMismatch)
 	}
 	return payoutGross, payoutFee, payoutNet, nil
-}
-
-func fetchRelatedCharge(transaction *stripe.BalanceTransaction) (*stripe.Charge, error) {
-	params := &stripe.ChargeParams{}
-	charge, err := charge.Get(transaction.Source.ID, params)
-	if err != nil {
-		return nil, err
-	}
-	return charge, nil
-}
-
-func validateRelatedCharge(charge *stripe.Charge) error {
-	if charge.BillingDetails == nil {
-		return fmt.Errorf(errors.ErrBillingDetailsMissing)
-	}
-	if charge.BillingDetails.Name == "" {
-		return fmt.Errorf(errors.ErrClientNameMissing)
-	}
-	if charge.BillingDetails.Email == "" {
-		return fmt.Errorf(errors.ErrClientEmailMissing)
-	}
-	return nil
 }
 
 func (p *PayoutService) UpsertDonation(transaction *stripe.BalanceTransaction, payoutId string) (err error) {
@@ -251,6 +227,28 @@ func (p *PayoutService) UpsertDonation(transaction *stripe.BalanceTransaction, p
 	)
 	if err = p.repo.InsertDonation(donationModel); err != nil {
 		return fmt.Errorf("Database donation insertion failed: %w", err)
+	}
+	return nil
+}
+
+func fetchRelatedCharge(transaction *stripe.BalanceTransaction) (*stripe.Charge, error) {
+	params := &stripe.ChargeParams{}
+	charge, err := charge.Get(transaction.Source.ID, params)
+	if err != nil {
+		return nil, err
+	}
+	return charge, nil
+}
+
+func validateRelatedCharge(charge *stripe.Charge) error {
+	if charge.BillingDetails == nil {
+		return fmt.Errorf(errors.ErrBillingDetailsMissing)
+	}
+	if charge.BillingDetails.Name == "" {
+		return fmt.Errorf(errors.ErrClientNameMissing)
+	}
+	if charge.BillingDetails.Email == "" {
+		return fmt.Errorf(errors.ErrClientEmailMissing)
 	}
 	return nil
 }
