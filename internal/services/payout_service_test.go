@@ -1,0 +1,215 @@
+package services
+
+import (
+	"testing"
+
+	"github.com/diother/go-invoices/internal/errors"
+	"github.com/stripe/stripe-go/v79"
+)
+
+func TestValidatePayout(t *testing.T) {
+	testCases := map[string]struct {
+		input    *stripe.Payout
+		expected string
+	}{
+		"validPayout":   {&stripe.Payout{ID: "po_123456789", Status: "paid"}, ""},
+		"payoutMissing": {nil, errors.ErrPayoutMissing},
+		"statusInvalid": {&stripe.Payout{ID: "po_123456789", Status: "pending"}, errors.ErrPayoutStatusInvalid},
+		"IDMissing":     {&stripe.Payout{Status: "paid"}, errors.ErrPayoutIDMissing},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			err := validatePayout(tc.input)
+			if tc.expected == "" && err != nil {
+				t.Errorf("Expected no error, got: %v", err)
+			}
+			if tc.expected != "" && (err == nil || err.Error() != tc.expected) {
+				t.Errorf("Expected error: %v, got: %v", tc.expected, err)
+			}
+		})
+	}
+}
+
+func TestValidateCharge(t *testing.T) {
+	testCases := map[string]struct {
+		input    *stripe.Charge
+		expected string
+	}{
+		"validCharge": {
+			&stripe.Charge{
+				ID:     "ch_123456789",
+				Status: "succeeded",
+				BillingDetails: &stripe.ChargeBillingDetails{
+					Name:  "John Doe",
+					Email: "john.doe@example.com",
+				},
+				BalanceTransaction: &stripe.BalanceTransaction{ID: "txn_123456"},
+			},
+			"",
+		},
+		"chargeMissing":  {nil, errors.ErrChargeMissing},
+		"statusInvalid":  {&stripe.Charge{ID: "ch_123456789", Status: "failed"}, errors.ErrChargeStatusInvalid},
+		"billingMissing": {&stripe.Charge{ID: "ch_123456789", Status: "succeeded"}, errors.ErrChargeBillingMissing},
+		"billingNameMissing": {&stripe.Charge{
+			ID:     "ch_123456789",
+			Status: "succeeded",
+			BillingDetails: &stripe.ChargeBillingDetails{
+				Email: "john.doe@example.com",
+			},
+		}, errors.ErrChargeBillingNameMissing},
+		"billingEmailMissing": {&stripe.Charge{
+			ID:     "ch_123456789",
+			Status: "succeeded",
+			BillingDetails: &stripe.ChargeBillingDetails{
+				Name: "John Doe",
+			},
+		}, errors.ErrChargeBillingEmailMissing},
+		"transactionMissing": {&stripe.Charge{
+			ID:     "ch_123456789",
+			Status: "succeeded",
+			BillingDetails: &stripe.ChargeBillingDetails{
+				Name:  "John Doe",
+				Email: "john.doe@example.com",
+			},
+		}, errors.ErrTransactionMissing},
+		"transactionIDMissing": {&stripe.Charge{
+			ID:     "ch_123456789",
+			Status: "succeeded",
+			BillingDetails: &stripe.ChargeBillingDetails{
+				Name:  "John Doe",
+				Email: "john.doe@example.com",
+			},
+			BalanceTransaction: &stripe.BalanceTransaction{},
+		}, errors.ErrTransactionIDMissing},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			err := validateCharge(tc.input)
+			if tc.expected == "" && err != nil {
+				t.Errorf("Expected no error, got: %v", err)
+			}
+			if tc.expected != "" && (err == nil || err.Error() != tc.expected) {
+				t.Errorf("Expected error: %v, got: %v", tc.expected, err)
+			}
+		})
+	}
+}
+
+func TestValidatePayoutTransaction(t *testing.T) {
+	testCases := map[string]struct {
+		input    *stripe.BalanceTransaction
+		expected string
+	}{
+		"validTransaction": {
+			&stripe.BalanceTransaction{
+				ID:      "txn_123456",
+				Type:    "payout",
+				Created: 1234567890,
+				Amount:  -1000,
+				Fee:     0,
+				Net:     -1000,
+			},
+			"",
+		},
+		"transactionMissing": {nil, errors.ErrTransactionMissing},
+		"typeInvalid":        {&stripe.BalanceTransaction{ID: "txn_123456", Type: "charge"}, errors.ErrPayoutTransactionTypeInvalid},
+		"IDMissing":          {&stripe.BalanceTransaction{Type: "payout"}, errors.ErrTransactionIDMissing},
+		"createdInvalid":     {&stripe.BalanceTransaction{ID: "txn_123456", Type: "payout", Created: 0}, errors.ErrTransactionCreatedInvalid},
+		"amountInvalid":      {&stripe.BalanceTransaction{ID: "txn_123456", Type: "payout", Created: 1234567890, Amount: 0}, errors.ErrPayoutTransactionAmountInvalid},
+		"feeInvalid":         {&stripe.BalanceTransaction{ID: "txn_123456", Type: "payout", Created: 1234567890, Amount: -1000, Fee: 1}, errors.ErrPayoutTransactionFeeInvalid},
+		"netInvalid":         {&stripe.BalanceTransaction{ID: "txn_123456", Type: "payout", Created: 1234567890, Amount: -1000, Net: 0}, errors.ErrPayoutTransactionNetInvalid},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			err := validatePayoutTransaction(tc.input)
+			if tc.expected == "" && err != nil {
+				t.Errorf("Expected no error, got: %v", err)
+			}
+			if tc.expected != "" && (err == nil || err.Error() != tc.expected) {
+				t.Errorf("Expected error: %v, got: %v", tc.expected, err)
+			}
+		})
+	}
+}
+
+func TestValidateChargeTransaction(t *testing.T) {
+	testCases := map[string]struct {
+		input    *stripe.BalanceTransaction
+		expected string
+	}{
+		"validTransaction": {
+			&stripe.BalanceTransaction{
+				ID:      "txn_123456",
+				Type:    "charge",
+				Created: 1234567890,
+				Amount:  1000,
+				Fee:     100,
+				Net:     900,
+				Source:  &stripe.BalanceTransactionSource{ID: "src_123456"},
+			},
+			"",
+		},
+		"transactionMissing": {nil, errors.ErrTransactionMissing},
+		"typeInvalid":        {&stripe.BalanceTransaction{ID: "txn_123456", Type: "payout"}, errors.ErrChargeTransactionTypeInvalid},
+		"IDMissing":          {&stripe.BalanceTransaction{Type: "charge"}, errors.ErrTransactionIDMissing},
+		"createdInvalid":     {&stripe.BalanceTransaction{ID: "txn_123456", Type: "charge", Created: 0}, errors.ErrTransactionCreatedInvalid},
+		"amountInvalid":      {&stripe.BalanceTransaction{ID: "txn_123456", Type: "charge", Created: 1234567890, Amount: 0}, errors.ErrChargeTransactionAmountInvalid},
+		"feeInvalid":         {&stripe.BalanceTransaction{ID: "txn_123456", Type: "charge", Created: 1234567890, Amount: 1000, Fee: 0}, errors.ErrChargeTransactionFeeInvalid},
+		"netInvalid":         {&stripe.BalanceTransaction{ID: "txn_123456", Type: "charge", Created: 1234567890, Amount: 1000, Fee: 100, Net: 0}, errors.ErrChargeTransactionNetInvalid},
+		"sourceMissing":      {&stripe.BalanceTransaction{ID: "txn_123456", Type: "charge", Created: 1234567890, Amount: 1000, Fee: 100, Net: 900}, errors.ErrChargeTransactionSourceMissing},
+		"sourceIDMissing":    {&stripe.BalanceTransaction{ID: "txn_123456", Type: "charge", Created: 1234567890, Amount: 1000, Fee: 100, Net: 900, Source: &stripe.BalanceTransactionSource{}}, errors.ErrChargeTransactionSourceIDMissing},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			err := validateChargeTransaction(tc.input)
+			if tc.expected == "" && err != nil {
+				t.Errorf("Expected no error, got: %v", err)
+			}
+			if tc.expected != "" && (err == nil || err.Error() != tc.expected) {
+				t.Errorf("Expected error: %v, got: %v", tc.expected, err)
+			}
+		})
+	}
+}
+
+func TestValidateFeeTransaction(t *testing.T) {
+	testCases := map[string]struct {
+		input    *stripe.BalanceTransaction
+		expected string
+	}{
+		"validTransaction": {
+			&stripe.BalanceTransaction{
+				ID:      "txn_fee_123456",
+				Type:    "stripe_fee",
+				Created: 1234567890,
+				Amount:  -100,
+				Fee:     0,
+				Net:     -100,
+			},
+			"",
+		},
+		"transactionMissing": {nil, errors.ErrTransactionMissing},
+		"typeInvalid":        {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "charge"}, errors.ErrFeeTransactionTypeInvalid},
+		"IDMissing":          {&stripe.BalanceTransaction{Type: "stripe_fee"}, errors.ErrTransactionIDMissing},
+		"createdInvalid":     {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Created: 0}, errors.ErrTransactionCreatedInvalid},
+		"amountInvalid":      {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Created: 1234567890, Amount: 0}, errors.ErrFeeTransactionAmountInvalid},
+		"feeInvalid":         {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Created: 1234567890, Amount: -100, Fee: 1}, errors.ErrFeeTransactionFeeInvalid},
+		"netInvalid":         {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Created: 1234567890, Amount: -100, Fee: 0, Net: 1}, errors.ErrFeeTransactionNetInvalid},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			err := validateFeeTransaction(tc.input)
+			if tc.expected == "" && err != nil {
+				t.Errorf("Expected no error, got: %v", err)
+			}
+			if tc.expected != "" && (err == nil || err.Error() != tc.expected) {
+				t.Errorf("Expected error: %v, got: %v", tc.expected, err)
+			}
+		})
+	}
+}

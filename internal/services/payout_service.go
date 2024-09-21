@@ -95,16 +95,6 @@ func (p *PayoutService) ProcessPayout(payout *stripe.Payout) (err error) {
 	return
 }
 
-func validatePayout(payout *stripe.Payout) error {
-	if payout.Status != "paid" {
-		return fmt.Errorf(errors.ErrPayoutNotPaid)
-	}
-	if payout.ID == "" {
-		return fmt.Errorf(errors.ErrPayoutIDMissing)
-	}
-	return nil
-}
-
 func fetchRelatedTransactions(id string) ([]*stripe.BalanceTransaction, error) {
 	params := &stripe.BalanceTransactionListParams{}
 	params.Payout = &id
@@ -124,7 +114,7 @@ func fetchRelatedTransactions(id string) ([]*stripe.BalanceTransaction, error) {
 
 func validateRelatedTransactions(transactions []*stripe.BalanceTransaction) error {
 	if len(transactions) < 2 {
-		return fmt.Errorf(errors.ErrTransactionListMissing)
+		return fmt.Errorf(errors.ErrPayoutListTransactionInvalid)
 	}
 	if err := validatePayoutTransaction(transactions[0]); err != nil {
 		return fmt.Errorf("Payout transaction validation failed: %w", err)
@@ -140,38 +130,8 @@ func validateRelatedTransactions(transactions []*stripe.BalanceTransaction) erro
 				return fmt.Errorf("Fee transaction validation failed for %s: %w", transactions[i].ID, err)
 			}
 		default:
-			return fmt.Errorf("Unexpected transaction type for %s: %s", transactions[i].ID, transactions[i].Type)
+			return fmt.Errorf("Expected charge or stripe_fee but got: %s", transactions[i].Type)
 		}
-	}
-	return nil
-}
-
-func validatePayoutTransaction(transaction *stripe.BalanceTransaction) error {
-	if transaction.Type != "payout" {
-		return fmt.Errorf(errors.ErrTransactionPayoutFailed+". Current type: %s", transaction.Type)
-	}
-	return validateTransaction(transaction)
-}
-
-func validateChargeTransaction(transaction *stripe.BalanceTransaction) error {
-	if transaction.Source == nil {
-		return fmt.Errorf(errors.ErrChargeTransactionSourceMissing)
-	}
-	if transaction.Source.ID == "" {
-		return fmt.Errorf(errors.ErrTransactionChargeIDMissing)
-	}
-	return validateTransaction(transaction)
-}
-
-func validateFeeTransaction(transaction *stripe.BalanceTransaction) error {
-	if transaction.ID == "" {
-		return fmt.Errorf(errors.ErrTransactionIDMissing)
-	}
-	if transaction.Created == 0 {
-		return fmt.Errorf(errors.ErrTransactionCreatedMissing)
-	}
-	if transaction.Amount == 0 {
-		return fmt.Errorf(errors.ErrTransactionAmountMissing)
 	}
 	return nil
 }
@@ -193,7 +153,7 @@ func validateMatchingSums(transactions []*stripe.BalanceTransaction) (int64, int
 	payoutAmount := -transactions[0].Amount
 
 	if payoutAmount != payoutNet {
-		return 0, 0, 0, fmt.Errorf(errors.ErrTransactionPayoutMismatch)
+		return 0, 0, 0, fmt.Errorf(errors.ErrPayoutListTransactionMismatch)
 	}
 	return payoutGross, payoutFee, payoutNet, nil
 }
@@ -212,7 +172,7 @@ func (p *PayoutService) UpsertDonation(transaction *stripe.BalanceTransaction, p
 	if err != nil {
 		return fmt.Errorf("Related charge fetch failed: %w", err)
 	}
-	if err = validateRelatedCharge(charge); err != nil {
+	if err = validateCharge(charge); err != nil {
 		return fmt.Errorf("Related charge validation failed: %w", err)
 	}
 	donationModel = models.NewDonation(
@@ -240,15 +200,121 @@ func fetchRelatedCharge(transaction *stripe.BalanceTransaction) (*stripe.Charge,
 	return charge, nil
 }
 
-func validateRelatedCharge(charge *stripe.Charge) error {
+func validatePayout(payout *stripe.Payout) error {
+	if payout == nil {
+		return fmt.Errorf(errors.ErrPayoutMissing)
+	}
+	if payout.Status != "paid" {
+		return fmt.Errorf(errors.ErrPayoutStatusInvalid)
+	}
+	if payout.ID == "" {
+		return fmt.Errorf(errors.ErrPayoutIDMissing)
+	}
+	return nil
+}
+
+func validateCharge(charge *stripe.Charge) error {
+	if charge == nil {
+		return fmt.Errorf(errors.ErrChargeMissing)
+	}
+	if charge.Status != "succeeded" {
+		return fmt.Errorf(errors.ErrChargeStatusInvalid)
+	}
 	if charge.BillingDetails == nil {
-		return fmt.Errorf(errors.ErrBillingDetailsMissing)
+		return fmt.Errorf(errors.ErrChargeBillingMissing)
 	}
 	if charge.BillingDetails.Name == "" {
-		return fmt.Errorf(errors.ErrClientNameMissing)
+		return fmt.Errorf(errors.ErrChargeBillingNameMissing)
 	}
 	if charge.BillingDetails.Email == "" {
-		return fmt.Errorf(errors.ErrClientEmailMissing)
+		return fmt.Errorf(errors.ErrChargeBillingEmailMissing)
+	}
+	if charge.BalanceTransaction == nil {
+		return fmt.Errorf(errors.ErrTransactionMissing)
+	}
+	if charge.BalanceTransaction.ID == "" {
+		return fmt.Errorf(errors.ErrTransactionIDMissing)
+	}
+	return nil
+}
+
+func validatePayoutTransaction(transaction *stripe.BalanceTransaction) error {
+	if transaction == nil {
+		return fmt.Errorf(errors.ErrTransactionMissing)
+	}
+	if transaction.Type != "payout" {
+		return fmt.Errorf(errors.ErrPayoutTransactionTypeInvalid)
+	}
+	if transaction.ID == "" {
+		return fmt.Errorf(errors.ErrTransactionIDMissing)
+	}
+	if transaction.Created <= 0 {
+		return fmt.Errorf(errors.ErrTransactionCreatedInvalid)
+	}
+	if transaction.Amount >= 0 {
+		return fmt.Errorf(errors.ErrPayoutTransactionAmountInvalid)
+	}
+	if transaction.Fee != 0 {
+		return fmt.Errorf(errors.ErrPayoutTransactionFeeInvalid)
+	}
+	if transaction.Net >= 0 {
+		return fmt.Errorf(errors.ErrPayoutTransactionNetInvalid)
+	}
+	return nil
+}
+
+func validateChargeTransaction(transaction *stripe.BalanceTransaction) error {
+	if transaction == nil {
+		return fmt.Errorf(errors.ErrTransactionMissing)
+	}
+	if transaction.Type != "charge" {
+		return fmt.Errorf(errors.ErrChargeTransactionTypeInvalid)
+	}
+	if transaction.ID == "" {
+		return fmt.Errorf(errors.ErrTransactionIDMissing)
+	}
+	if transaction.Created <= 0 {
+		return fmt.Errorf(errors.ErrTransactionCreatedInvalid)
+	}
+	if transaction.Amount <= 0 {
+		return fmt.Errorf(errors.ErrChargeTransactionAmountInvalid)
+	}
+	if transaction.Fee <= 0 {
+		return fmt.Errorf(errors.ErrChargeTransactionFeeInvalid)
+	}
+	if transaction.Net <= 0 {
+		return fmt.Errorf(errors.ErrChargeTransactionNetInvalid)
+	}
+	if transaction.Source == nil {
+		return fmt.Errorf(errors.ErrChargeTransactionSourceMissing)
+	}
+	if transaction.Source.ID == "" {
+		return fmt.Errorf(errors.ErrChargeTransactionSourceIDMissing)
+	}
+	return nil
+}
+
+func validateFeeTransaction(transaction *stripe.BalanceTransaction) error {
+	if transaction == nil {
+		return fmt.Errorf(errors.ErrTransactionMissing)
+	}
+	if transaction.Type != "stripe_fee" {
+		return fmt.Errorf(errors.ErrFeeTransactionTypeInvalid)
+	}
+	if transaction.ID == "" {
+		return fmt.Errorf(errors.ErrTransactionIDMissing)
+	}
+	if transaction.Created <= 0 {
+		return fmt.Errorf(errors.ErrTransactionCreatedInvalid)
+	}
+	if transaction.Amount >= 0 {
+		return fmt.Errorf(errors.ErrFeeTransactionAmountInvalid)
+	}
+	if transaction.Fee != 0 {
+		return fmt.Errorf(errors.ErrFeeTransactionFeeInvalid)
+	}
+	if transaction.Net >= 0 {
+		return fmt.Errorf(errors.ErrFeeTransactionNetInvalid)
 	}
 	return nil
 }

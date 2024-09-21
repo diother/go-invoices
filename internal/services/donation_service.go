@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/diother/go-invoices/internal/errors"
 	"github.com/diother/go-invoices/internal/models"
 	"github.com/stripe/stripe-go/v79"
 	"github.com/stripe/stripe-go/v79/balancetransaction"
@@ -28,7 +27,7 @@ func (d *DonationService) ProcessDonation(charge *stripe.Charge) (err error) {
 		return fmt.Errorf("Transaction fetch error: %w", err)
 	}
 
-	if err = validateTransaction(transaction); err != nil {
+	if err = validateChargeTransaction(transaction); err != nil {
 		return fmt.Errorf("Transaction validation error: %w", err)
 	}
 
@@ -48,28 +47,6 @@ func (d *DonationService) ProcessDonation(charge *stripe.Charge) (err error) {
 	return
 }
 
-func validateCharge(charge *stripe.Charge) error {
-	if charge.Status != "succeeded" {
-		return fmt.Errorf(errors.ErrChargeStatusFailed)
-	}
-	if charge.BillingDetails == nil {
-		return fmt.Errorf(errors.ErrBillingDetailsMissing)
-	}
-	if charge.BillingDetails.Name == "" {
-		return fmt.Errorf(errors.ErrClientNameMissing)
-	}
-	if charge.BillingDetails.Email == "" {
-		return fmt.Errorf(errors.ErrClientEmailMissing)
-	}
-	if charge.BalanceTransaction == nil {
-		return fmt.Errorf(errors.ErrBalanceTransactionMissing)
-	}
-	if charge.BalanceTransaction.ID == "" {
-		return fmt.Errorf(errors.ErrBalanceTransactionIDMissing)
-	}
-	return nil
-}
-
 func fetchTransaction(id string) (*stripe.BalanceTransaction, error) {
 	params := &stripe.BalanceTransactionParams{}
 	transaction, err := balancetransaction.Get(id, params)
@@ -77,20 +54,4 @@ func fetchTransaction(id string) (*stripe.BalanceTransaction, error) {
 		return nil, err
 	}
 	return transaction, nil
-}
-
-func validateTransaction(transaction *stripe.BalanceTransaction) error {
-	if transaction.ID == "" {
-		return fmt.Errorf(errors.ErrTransactionIDMissing)
-	}
-	if transaction.Created == 0 {
-		return fmt.Errorf(errors.ErrTransactionCreatedMissing)
-	}
-	if transaction.Amount == 0 {
-		return fmt.Errorf(errors.ErrTransactionAmountMissing)
-	}
-	if transaction.Net == 0 {
-		return fmt.Errorf(errors.ErrTransactionNetMissing)
-	}
-	return nil
 }
