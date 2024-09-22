@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/diother/go-invoices/internal/errors"
+	"github.com/diother/go-invoices/internal/constants"
 	"github.com/stripe/stripe-go/v79"
 )
 
@@ -14,9 +14,9 @@ func TestValidatePayout(t *testing.T) {
 		expected string
 	}{
 		"validPayout":   {&stripe.Payout{ID: "po_123456789", Status: "paid"}, ""},
-		"payoutMissing": {nil, errors.ErrPayoutMissing},
-		"statusInvalid": {&stripe.Payout{ID: "po_123456789", Status: "pending"}, errors.ErrPayoutStatusInvalid},
-		"IDMissing":     {&stripe.Payout{Status: "paid"}, errors.ErrPayoutIDMissing},
+		"payoutMissing": {nil, constants.ErrPayoutMissing},
+		"statusInvalid": {&stripe.Payout{ID: "po_123456789", Status: "pending"}, constants.ErrPayoutStatusInvalid},
+		"IDMissing":     {&stripe.Payout{Status: "paid"}, constants.ErrPayoutIDMissing},
 	}
 
 	for name, tc := range testCases {
@@ -49,23 +49,23 @@ func TestValidateCharge(t *testing.T) {
 			},
 			"",
 		},
-		"chargeMissing":  {nil, errors.ErrChargeMissing},
-		"statusInvalid":  {&stripe.Charge{ID: "ch_123456789", Status: "failed"}, errors.ErrChargeStatusInvalid},
-		"billingMissing": {&stripe.Charge{ID: "ch_123456789", Status: "succeeded"}, errors.ErrChargeBillingMissing},
+		"chargeMissing":  {nil, constants.ErrChargeMissing},
+		"statusInvalid":  {&stripe.Charge{ID: "ch_123456789", Status: "failed"}, constants.ErrChargeStatusInvalid},
+		"billingMissing": {&stripe.Charge{ID: "ch_123456789", Status: "succeeded"}, constants.ErrChargeBillingMissing},
 		"billingNameMissing": {&stripe.Charge{
 			ID:     "ch_123456789",
 			Status: "succeeded",
 			BillingDetails: &stripe.ChargeBillingDetails{
 				Email: "john.doe@example.com",
 			},
-		}, errors.ErrChargeBillingNameMissing},
+		}, constants.ErrChargeBillingNameMissing},
 		"billingEmailMissing": {&stripe.Charge{
 			ID:     "ch_123456789",
 			Status: "succeeded",
 			BillingDetails: &stripe.ChargeBillingDetails{
 				Name: "John Doe",
 			},
-		}, errors.ErrChargeBillingEmailMissing},
+		}, constants.ErrChargeBillingEmailMissing},
 		"transactionMissing": {&stripe.Charge{
 			ID:     "ch_123456789",
 			Status: "succeeded",
@@ -73,7 +73,7 @@ func TestValidateCharge(t *testing.T) {
 				Name:  "John Doe",
 				Email: "john.doe@example.com",
 			},
-		}, errors.ErrTransactionMissing},
+		}, constants.ErrTransactionMissing},
 		"transactionIDMissing": {&stripe.Charge{
 			ID:     "ch_123456789",
 			Status: "succeeded",
@@ -82,7 +82,7 @@ func TestValidateCharge(t *testing.T) {
 				Email: "john.doe@example.com",
 			},
 			BalanceTransaction: &stripe.BalanceTransaction{},
-		}, errors.ErrTransactionIDMissing},
+		}, constants.ErrTransactionIDMissing},
 	}
 
 	for name, tc := range testCases {
@@ -114,13 +114,13 @@ func TestValidatePayoutTransaction(t *testing.T) {
 			},
 			"",
 		},
-		"transactionMissing": {nil, errors.ErrTransactionMissing},
-		"typeInvalid":        {&stripe.BalanceTransaction{ID: "txn_123456", Type: "charge"}, errors.ErrPayoutTransactionTypeInvalid},
-		"IDMissing":          {&stripe.BalanceTransaction{Type: "payout"}, errors.ErrTransactionIDMissing},
-		"createdInvalid":     {&stripe.BalanceTransaction{ID: "txn_123456", Type: "payout", Created: 0}, errors.ErrTransactionCreatedInvalid},
-		"amountInvalid":      {&stripe.BalanceTransaction{ID: "txn_123456", Type: "payout", Created: 1234567890, Amount: 0}, errors.ErrPayoutTransactionAmountInvalid},
-		"feeInvalid":         {&stripe.BalanceTransaction{ID: "txn_123456", Type: "payout", Created: 1234567890, Amount: -1000, Fee: 1}, errors.ErrPayoutTransactionFeeInvalid},
-		"netInvalid":         {&stripe.BalanceTransaction{ID: "txn_123456", Type: "payout", Created: 1234567890, Amount: -1000, Net: 0}, errors.ErrPayoutTransactionNetInvalid},
+		"transactionMissing": {nil, constants.ErrTransactionMissing},
+		"typeInvalid":        {&stripe.BalanceTransaction{ID: "txn_123456", Type: "charge"}, constants.ErrPayoutTransactionTypeInvalid},
+		"IDMissing":          {&stripe.BalanceTransaction{Type: "payout"}, constants.ErrTransactionIDMissing},
+		"createdInvalid":     {&stripe.BalanceTransaction{ID: "txn_123456", Type: "payout", Created: 0}, constants.ErrTransactionCreatedInvalid},
+		"amountInvalid":      {&stripe.BalanceTransaction{ID: "txn_123456", Type: "payout", Created: 1234567890, Amount: 0}, constants.ErrPayoutTransactionAmountInvalid},
+		"feeInvalid":         {&stripe.BalanceTransaction{ID: "txn_123456", Type: "payout", Created: 1234567890, Amount: -1000, Fee: 1}, constants.ErrPayoutTransactionFeeInvalid},
+		"netInvalid":         {&stripe.BalanceTransaction{ID: "txn_123456", Type: "payout", Created: 1234567890, Amount: -1000, Net: 0}, constants.ErrPayoutTransactionNetInvalid},
 	}
 
 	for name, tc := range testCases {
@@ -153,15 +153,15 @@ func TestValidateChargeTransaction(t *testing.T) {
 			},
 			"",
 		},
-		"transactionMissing": {nil, errors.ErrTransactionMissing},
-		"typeInvalid":        {&stripe.BalanceTransaction{ID: "txn_123456", Type: "payout"}, errors.ErrChargeTransactionTypeInvalid},
-		"IDMissing":          {&stripe.BalanceTransaction{Type: "charge"}, errors.ErrTransactionIDMissing},
-		"createdInvalid":     {&stripe.BalanceTransaction{ID: "txn_123456", Type: "charge", Created: 0}, errors.ErrTransactionCreatedInvalid},
-		"amountInvalid":      {&stripe.BalanceTransaction{ID: "txn_123456", Type: "charge", Created: 1234567890, Amount: 0}, errors.ErrChargeTransactionAmountInvalid},
-		"feeInvalid":         {&stripe.BalanceTransaction{ID: "txn_123456", Type: "charge", Created: 1234567890, Amount: 1000, Fee: 0}, errors.ErrChargeTransactionFeeInvalid},
-		"netInvalid":         {&stripe.BalanceTransaction{ID: "txn_123456", Type: "charge", Created: 1234567890, Amount: 1000, Fee: 100, Net: 0}, errors.ErrChargeTransactionNetInvalid},
-		"sourceMissing":      {&stripe.BalanceTransaction{ID: "txn_123456", Type: "charge", Created: 1234567890, Amount: 1000, Fee: 100, Net: 900}, errors.ErrChargeTransactionSourceMissing},
-		"sourceIDMissing":    {&stripe.BalanceTransaction{ID: "txn_123456", Type: "charge", Created: 1234567890, Amount: 1000, Fee: 100, Net: 900, Source: &stripe.BalanceTransactionSource{}}, errors.ErrChargeTransactionSourceIDMissing},
+		"transactionMissing": {nil, constants.ErrTransactionMissing},
+		"typeInvalid":        {&stripe.BalanceTransaction{ID: "txn_123456", Type: "payout"}, constants.ErrChargeTransactionTypeInvalid},
+		"IDMissing":          {&stripe.BalanceTransaction{Type: "charge"}, constants.ErrTransactionIDMissing},
+		"createdInvalid":     {&stripe.BalanceTransaction{ID: "txn_123456", Type: "charge", Created: 0}, constants.ErrTransactionCreatedInvalid},
+		"amountInvalid":      {&stripe.BalanceTransaction{ID: "txn_123456", Type: "charge", Created: 1234567890, Amount: 0}, constants.ErrChargeTransactionAmountInvalid},
+		"feeInvalid":         {&stripe.BalanceTransaction{ID: "txn_123456", Type: "charge", Created: 1234567890, Amount: 1000, Fee: 0}, constants.ErrChargeTransactionFeeInvalid},
+		"netInvalid":         {&stripe.BalanceTransaction{ID: "txn_123456", Type: "charge", Created: 1234567890, Amount: 1000, Fee: 100, Net: 0}, constants.ErrChargeTransactionNetInvalid},
+		"sourceMissing":      {&stripe.BalanceTransaction{ID: "txn_123456", Type: "charge", Created: 1234567890, Amount: 1000, Fee: 100, Net: 900}, constants.ErrChargeTransactionSourceMissing},
+		"sourceIDMissing":    {&stripe.BalanceTransaction{ID: "txn_123456", Type: "charge", Created: 1234567890, Amount: 1000, Fee: 100, Net: 900, Source: &stripe.BalanceTransactionSource{}}, constants.ErrChargeTransactionSourceIDMissing},
 	}
 
 	for name, tc := range testCases {
@@ -193,13 +193,13 @@ func TestValidateFeeTransaction(t *testing.T) {
 			},
 			"",
 		},
-		"transactionMissing": {nil, errors.ErrTransactionMissing},
-		"typeInvalid":        {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "charge"}, errors.ErrFeeTransactionTypeInvalid},
-		"IDMissing":          {&stripe.BalanceTransaction{Type: "stripe_fee"}, errors.ErrTransactionIDMissing},
-		"createdInvalid":     {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Created: 0}, errors.ErrTransactionCreatedInvalid},
-		"amountInvalid":      {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Created: 1234567890, Amount: 0}, errors.ErrFeeTransactionAmountInvalid},
-		"feeInvalid":         {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Created: 1234567890, Amount: -100, Fee: 1}, errors.ErrFeeTransactionFeeInvalid},
-		"netInvalid":         {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Created: 1234567890, Amount: -100, Fee: 0, Net: 1}, errors.ErrFeeTransactionNetInvalid},
+		"transactionMissing": {nil, constants.ErrTransactionMissing},
+		"typeInvalid":        {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "charge"}, constants.ErrFeeTransactionTypeInvalid},
+		"IDMissing":          {&stripe.BalanceTransaction{Type: "stripe_fee"}, constants.ErrTransactionIDMissing},
+		"createdInvalid":     {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Created: 0}, constants.ErrTransactionCreatedInvalid},
+		"amountInvalid":      {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Created: 1234567890, Amount: 0}, constants.ErrFeeTransactionAmountInvalid},
+		"feeInvalid":         {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Created: 1234567890, Amount: -100, Fee: 1}, constants.ErrFeeTransactionFeeInvalid},
+		"netInvalid":         {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Created: 1234567890, Amount: -100, Fee: 0, Net: 1}, constants.ErrFeeTransactionNetInvalid},
 	}
 
 	for name, tc := range testCases {
@@ -230,19 +230,19 @@ func TestValidateRelatedTransactions(t *testing.T) {
 		},
 		"insufficientTransactions": {
 			input:    []*stripe.BalanceTransaction{validPayout},
-			expected: errors.ErrPayoutListInsufficientTransactions,
+			expected: constants.ErrPayoutListInsufficientTransactions,
 		},
 		"payoutTransactionInvalid": {
 			input:    []*stripe.BalanceTransaction{validCharge, validCharge},
-			expected: errors.ErrPayoutListPayoutTransactionInvalid,
+			expected: constants.ErrPayoutListPayoutTransactionInvalid,
 		},
 		"relatedTransactionInvalid": {
 			input:    []*stripe.BalanceTransaction{validPayout, {Type: "charge", ID: ""}},
-			expected: errors.ErrPayoutListRelatedTransactionInvalid,
+			expected: constants.ErrPayoutListRelatedTransactionInvalid,
 		},
 		"unexpectedType": {
 			input:    []*stripe.BalanceTransaction{validPayout, {Type: "unexpected"}},
-			expected: errors.ErrPayoutListUnexpectedTransaction,
+			expected: constants.ErrPayoutListUnexpectedTransaction,
 		},
 	}
 
@@ -280,7 +280,7 @@ func TestValidateMatchingSums(t *testing.T) {
 		},
 		"payoutMismatch": {
 			input:       []*stripe.BalanceTransaction{validPayout, validCharge, validFee, validFee},
-			expectedErr: errors.ErrPayoutListSumMismatch,
+			expectedErr: constants.ErrPayoutListSumMismatch,
 		},
 	}
 

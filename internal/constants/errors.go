@@ -1,4 +1,4 @@
-package errors
+package constants
 
 // Charge-related errors
 const (
@@ -17,7 +17,6 @@ const (
 )
 
 // Payout list validation errors
-// NOTE: in work
 const (
 	ErrPayoutListSumMismatch               = "payout amount does not match total charges minus fees"
 	ErrPayoutListInsufficientTransactions  = "transaction list expected at least 2 transactions"
