@@ -17,7 +17,7 @@ func NewDonationService(repo WebhookRepository) *DonationService {
 	return &DonationService{repo: repo}
 }
 
-func (d *DonationService) ProcessDonation(charge *stripe.Charge) (err error) {
+func (s *DonationService) ProcessDonation(charge *stripe.Charge) (err error) {
 	if err = validateCharge(charge); err != nil {
 		return fmt.Errorf("Charge validation error: %w", err)
 	}
@@ -41,7 +41,7 @@ func (d *DonationService) ProcessDonation(charge *stripe.Charge) (err error) {
 		charge.BillingDetails.Email,
 		sql.NullString{Valid: false},
 	)
-	if err = d.repo.InsertDonation(donation); err != nil {
+	if err = s.repo.InsertDonation(donation); err != nil {
 		return fmt.Errorf("Database donation insertion failed: %w", err)
 	}
 	return

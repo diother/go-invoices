@@ -61,7 +61,7 @@ func (h *WebhookHandler) HandleWebhooks(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 		if err = h.donation.ProcessDonation(&charge); err != nil {
-			log.Printf("Service error: %v\n", err)
+			log.Printf("Webhook service error: %v\n", err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
@@ -74,7 +74,7 @@ func (h *WebhookHandler) HandleWebhooks(w http.ResponseWriter, r *http.Request) 
 			return
 		}
 		if err = h.payout.ProcessPayout(&payout); err != nil {
-			log.Printf("Service error: %v\n", err)
+			log.Printf("Webhook service error: %v\n", err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}

@@ -1,0 +1,27 @@
+{{ define "home" }}
+<!doctype html>
+<html lang="en">
+    <head>
+        <title>Test title</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body> 
+        <h1>Donations</h1>
+        {{ range . }}
+        <li>Client name: {{ .ClientName }}</li>
+        <li>Client email: {{ .ClientEmail }}</li>
+        <li>Gross: {{ .Gross }} lei</li>
+        <li>Fee: {{ .Fee }} lei</li>
+        <li>Net: {{ .Net }} lei</li>
+        <form action="/document" method="POST" target="_blank">
+            <input type="hidden" name="type" value="donation">
+            <input type="hidden" name="ID" value="{{ .ID }}">
+            <button type="submit">Invoice</button>
+        </form>
+        <br>
+        {{ else }}
+        <li>No donations found.</li>
+        {{ end }}
+    </body>
+</html>
+{{ end }}

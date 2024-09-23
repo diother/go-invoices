@@ -27,3 +27,13 @@ func (r *WebhookRepository) UpdateRelatedPayout(donation *models.Donation) (bool
 	}
 	return rowsAffected != 0, nil
 }
+
+func (r *WebhookRepository) GetAllDonations() ([]*models.Donation, error) {
+	var donations []*models.Donation
+	query := "SELECT * FROM donations"
+
+	if err := r.db.Select(&donations, query); err != nil {
+		return nil, err
+	}
+	return donations, nil
+}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/diother/go-invoices/config"
 	"github.com/diother/go-invoices/database"
+
 	"github.com/diother/go-invoices/internal/handlers"
 	"github.com/diother/go-invoices/internal/repository"
 	"github.com/diother/go-invoices/internal/services"
@@ -24,20 +25,30 @@ func main() {
 		log.Fatalf("Failed to connect to the database: %v", err)
 	}
 
+	if err = database.ApplyMigrations(dsn); err != nil {
+		log.Fatalf("Failed to apply migrations: %v", err)
+	}
+
 	stripe.Key = stripeKey
 
-	donationRepo := repository.NewDonationRepositoryMySQL(db)
-	payoutRepo := repository.NewPayoutRepositoryMySQL(db)
+	webhookRepo := repository.NewWebhookRepository(db)
 
-	donationService := services.NewDonationServiceImpl(donationRepo)
-	payoutService := services.NewPayoutServiceImpl(payoutRepo, donationRepo)
+	donationService := services.NewDonationService(webhookRepo)
+	payoutService := services.NewPayoutService(webhookRepo)
+	accountingService := services.NewAccountingService(webhookRepo)
 
 	webhookHandler := handlers.NewWebhookHandler(donationService, payoutService, stripeEndpointSecret)
+	pwaHandler := handlers.NewPwaHandler(accountingService)
+
+	fs := http.FileServer(http.Dir("./static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
+
 	http.HandleFunc("/webhook", webhookHandler.HandleWebhooks)
+	http.HandleFunc("/", pwaHandler.Test)
+	http.HandleFunc("/document", pwaHandler.Document)
 
 	log.Println("Server listening at port 8080")
-	err = http.ListenAndServe(":8080", nil)
-	if err != nil {
+	if err = http.ListenAndServe(":8080", nil); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }

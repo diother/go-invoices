@@ -10,11 +10,11 @@ sleep 1
 new_window=$(tmux display-message -p '#I')
 
 tmux split-window -v
-tmux split-window -v
+# tmux split-window -v
 
-tmux send-keys -t "$session:$window.2" 'docker-compose -f scripts/docker-compose.yml up' C-m
-tmux send-keys -t "$session:$window.1" 'stripe listen --events payment_intent.succeeded,checkout.session.completed,charge.updated,charge.succeeded \
-  --forward-to localhost:8080/webhook' C-m
+tmux send-keys -t "$session:$window.1" 'docker-compose -f scripts/docker-compose.yml up' C-m
+# tmux send-keys -t "$session:$window.1" 'stripe listen --events payment_intent.succeeded,checkout.session.completed,charge.updated,charge.succeeded \
+#   --forward-to localhost:8080/webhook' C-m
 
 sleep 5 
 
