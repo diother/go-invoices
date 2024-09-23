@@ -10,9 +10,10 @@
         {{ range . }}
         <li>Client name: {{ .ClientName }}</li>
         <li>Client email: {{ .ClientEmail }}</li>
-        <li>Gross: {{ .Gross }} lei</li>
-        <li>Fee: {{ .Fee }} lei</li>
-        <li>Net: {{ .Net }} lei</li>
+        <li>Gross: {{ .Gross }}</li>
+        <li>Fee: {{ .Fee }}</li>
+        <li>Net: {{ .Net }}</li>
+        <li>Created: {{ .Created }}</li>
         <form action="/document" method="POST" target="_blank">
             <input type="hidden" name="type" value="donation">
             <input type="hidden" name="ID" value="{{ .ID }}">

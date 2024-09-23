@@ -12,6 +12,7 @@ import (
 )
 
 type WebhookRepository interface {
+	GetDonation(id string) (*models.Donation, error)
 	GetAllDonations() ([]*models.Donation, error)
 	InsertDonation(donation *models.Donation) error
 	InsertFee(fee *models.Fee) error

@@ -19,16 +19,13 @@ func main() {
 	if err != nil {
 		log.Fatalf("Environment variable is missing: %v", err)
 	}
-
 	db, err := database.InitDB(dsn)
 	if err != nil {
 		log.Fatalf("Failed to connect to the database: %v", err)
 	}
-
 	if err = database.ApplyMigrations(dsn); err != nil {
 		log.Fatalf("Failed to apply migrations: %v", err)
 	}
-
 	stripe.Key = stripeKey
 
 	webhookRepo := repository.NewWebhookRepository(db)
@@ -44,8 +41,8 @@ func main() {
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	http.HandleFunc("/webhook", webhookHandler.HandleWebhooks)
-	http.HandleFunc("/", pwaHandler.Test)
-	http.HandleFunc("/document", pwaHandler.Document)
+	http.HandleFunc("/", pwaHandler.HandleDashboard)
+	http.HandleFunc("/document", pwaHandler.HandleDocuments)
 
 	log.Println("Server listening at port 8080")
 	if err = http.ListenAndServe(":8080", nil); err != nil {

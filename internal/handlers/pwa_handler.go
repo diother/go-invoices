@@ -6,13 +6,13 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/diother/go-invoices/internal/models"
+	"github.com/diother/go-invoices/internal/dto"
 	"github.com/signintech/gopdf"
 )
 
 type AccountingService interface {
-	FetchDonations() ([]*models.Donation, error)
-	GenerateDocument(documentType, documentID string) (gopdf.GoPdf, error)
+	FetchDonations() ([]*dto.FormattedDonation, error)
+	GenerateInvoice(documentID string) (*gopdf.GoPdf, error)
 }
 
 type PwaHandler struct {
@@ -51,16 +51,27 @@ func (h *PwaHandler) HandleDocuments(w http.ResponseWriter, r *http.Request) {
 
 	documentType := r.FormValue("type")
 	documentID := r.FormValue("ID")
+	fmt.Println(documentType)
+	fmt.Println(documentID)
 	if err := validateDocumentRequest(documentType, documentID); err != nil {
 		http.Error(w, "Parameters are missing", http.StatusBadRequest)
 		return
 	}
 
-	pdf, err := h.service.GenerateDocument(documentType, documentID)
-	if err != nil {
-		log.Printf("Accounting service error: %v\n", err)
-		http.Error(w, "Parameters are missing", http.StatusBadRequest)
-		return
+	var pdf *gopdf.GoPdf
+	var err error
+
+	switch documentType {
+	case "donation":
+		pdf, err = h.service.GenerateInvoice(documentID)
+		if err != nil {
+			log.Printf("Accounting service error: %v\n", err)
+			http.Error(w, "Internal server error", http.StatusBadRequest)
+			return
+		}
+
+	default:
+		http.Error(w, "Invalid document type", http.StatusBadRequest)
 	}
 
 	w.Header().Set("Content-Type", "application/pdf")

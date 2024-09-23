@@ -1,6 +1,9 @@
 package repository
 
 import (
+	"database/sql"
+	"fmt"
+
 	"github.com/diother/go-invoices/internal/models"
 )
 
@@ -36,4 +39,17 @@ func (r *WebhookRepository) GetAllDonations() ([]*models.Donation, error) {
 		return nil, err
 	}
 	return donations, nil
+}
+
+func (r *WebhookRepository) GetDonation(id string) (*models.Donation, error) {
+	var donation models.Donation
+	query := "SELECT * FROM donations WHERE id = ?"
+
+	if err := r.db.Get(&donation, query, id); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("donation with id %s not found", id)
+		}
+		return nil, fmt.Errorf("failed to retrieve donation: %w", err)
+	}
+	return &donation, nil
 }
