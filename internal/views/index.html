@@ -6,23 +6,43 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
     </head>
     <body> 
-        <h1>Donations</h1>
-        {{ range . }}
-        <li>Client name: {{ .ClientName }}</li>
-        <li>Client email: {{ .ClientEmail }}</li>
-        <li>Gross: {{ .Gross }}</li>
-        <li>Fee: {{ .Fee }}</li>
-        <li>Net: {{ .Net }}</li>
-        <li>Created: {{ .Created }}</li>
-        <form action="/document" method="POST" target="_blank">
-            <input type="hidden" name="type" value="donation">
-            <input type="hidden" name="ID" value="{{ .ID }}">
-            <button type="submit">Invoice</button>
-        </form>
-        <br>
-        {{ else }}
-        <li>No donations found.</li>
-        {{ end }}
+        <div>
+            <h1>Donations</h1>
+            {{ range .Donations }}
+            <li>Client name: {{ .ClientName }}</li>
+            <li>Client email: {{ .ClientEmail }}</li>
+            <li>Gross: {{ .Gross }}</li>
+            <li>Fee: {{ .Fee }}</li>
+            <li>Net: {{ .Net }}</li>
+            <li>Created: {{ .Created }}</li>
+            <form action="/document" method="POST" target="_blank">
+                <input type="hidden" name="type" value="donation">
+                <input type="hidden" name="ID" value="{{ .ID }}">
+                <button type="submit">Invoice</button>
+            </form>
+            <br>
+            {{ else }}
+            <li>No donations found.</li>
+            {{ end }}
+        </div>
+        <div>
+            <h1>Payouts</h1>
+            {{ range .Payouts }}
+            <li>ID: {{ .ID }}</li>
+            <li>Gross: {{ .Gross }}</li>
+            <li>Fee: {{ .Fee }}</li>
+            <li>Net: {{ .Net }}</li>
+            <li>Created: {{ .Created }}</li>
+            <form action="/document" method="POST" target="_blank">
+                <input type="hidden" name="type" value="payout">
+                <input type="hidden" name="ID" value="{{ .ID }}">
+                <button type="submit">Generate report</button>
+            </form>
+            <br>
+            {{ else }}
+            <li>No payouts found.</li>
+            {{ end }}
+        </div>
     </body>
 </html>
 {{ end }}

@@ -23,7 +23,6 @@ func (s *DocumentService) GenerateInvoice(donation *dto.FormattedDonation) (pdf 
 	if err = addInvoiceFooter(pdf); err != nil {
 		return
 	}
-
 	addInvoiceTable(pdf)
 	addInvoiceProduct(pdf, donation)
 	addInvoiceSummary(pdf, donation)

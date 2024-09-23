@@ -12,7 +12,9 @@ import (
 
 type AccountingService interface {
 	FetchDonations() ([]*dto.FormattedDonation, error)
+	FetchPayouts() ([]*dto.FormattedPayout, error)
 	GenerateInvoice(documentID string) (*gopdf.GoPdf, error)
+	// GeneratePayoutReport(documentID string) (*gopdf.GoPdf, error)
 }
 
 type PwaHandler struct {
@@ -23,16 +25,32 @@ func NewPwaHandler(service AccountingService) *PwaHandler {
 	return &PwaHandler{service: service}
 }
 
+type DashboardData struct {
+	Donations []*dto.FormattedDonation
+	Payouts   []*dto.FormattedPayout
+}
+
 func (h *PwaHandler) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 	donations, err := h.service.FetchDonations()
 	if err != nil {
-		fmt.Println(fmt.Errorf("Select failed: %w", err))
-		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		log.Printf("Failed to fetch donations: %v\n", err)
+		http.Error(w, "Failed to fetch donations", http.StatusInternalServerError)
+		return
+	}
+	payouts, err := h.service.FetchPayouts()
+	if err != nil {
+		log.Printf("Failed to fetch payouts: %v\n", err)
+		http.Error(w, "Failed to fetch payouts", http.StatusInternalServerError)
 		return
 	}
 
+	data := DashboardData{
+		Donations: donations,
+		Payouts:   payouts,
+	}
+
 	tmpl := template.Must(template.New("test").ParseGlob("internal/views/*.html"))
-	if err = tmpl.ExecuteTemplate(w, "home", donations); err != nil {
+	if err = tmpl.ExecuteTemplate(w, "home", data); err != nil {
 		fmt.Println(fmt.Errorf("Select failed: %w", err))
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -67,6 +85,14 @@ func (h *PwaHandler) HandleDocuments(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Internal server error", http.StatusBadRequest)
 			return
 		}
+
+	// case "payout":
+	// 	pdf, err = h.service.GeneratePayoutReport(documentID)
+	// 	if err != nil {
+	// 		log.Printf("Accounting service error: %v\n", err)
+	// 		http.Error(w, "Internal server error", http.StatusBadRequest)
+	// 		return
+	// 	}
 
 	default:
 		http.Error(w, "Invalid document type", http.StatusBadRequest)

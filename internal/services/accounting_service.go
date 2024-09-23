@@ -34,6 +34,15 @@ func (s *AccountingService) FetchDonations() (donations []*dto.FormattedDonation
 	return
 }
 
+func (s *AccountingService) FetchPayouts() (payouts []*dto.FormattedPayout, err error) {
+	rawPayouts, err := s.repo.GetAllPayouts()
+	if err != nil {
+		return nil, fmt.Errorf("fetch donations failed: %w", err)
+	}
+	payouts = formatPayouts(rawPayouts)
+	return
+}
+
 func (s *AccountingService) GenerateInvoice(id string) (pdf *gopdf.GoPdf, err error) {
 	donationModel, err := s.repo.GetDonation(id)
 	if err != nil {
@@ -64,5 +73,22 @@ func formatDonationModel(donation *models.Donation) *dto.FormattedDonation {
 		donation.ClientName,
 		donation.ClientEmail,
 		donation.PayoutID.String,
+	)
+}
+
+func formatPayouts(rawPayouts []*models.Payout) (payouts []*dto.FormattedPayout) {
+	for _, rawPayout := range rawPayouts {
+		payouts = append(payouts, formatPayoutModel(rawPayout))
+	}
+	return
+}
+
+func formatPayoutModel(payout *models.Payout) *dto.FormattedPayout {
+	return dto.NewFormattedPayout(
+		payout.ID,
+		time.Unix(int64(payout.Created), 0).Format("02 Jan 2006"),
+		fmt.Sprintf("%.2f lei", float64(payout.Gross)/100),
+		fmt.Sprintf("%.2f lei", float64(payout.Fee)/100),
+		fmt.Sprintf("%.2f lei", float64(payout.Net)/100),
 	)
 }
