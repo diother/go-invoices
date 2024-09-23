@@ -1,7 +1,6 @@
-package pdf
+package documents
 
 import (
-	"github.com/diother/go-invoices/internal/models"
 	"github.com/signintech/gopdf"
 )
 
@@ -12,22 +11,10 @@ const (
 	marginBottom = 810
 )
 
-type DocumentPdf interface {
-	GenerateDocument()
-	addHeader()
-	addFooter()
-}
+type DocumentService struct{}
 
-type InvoicePdf struct {
-	Invoice *models.Invoice
-}
-
-type PayoutPdf struct {
-	Payout *models.Payout
-}
-
-type MonthlyPayoutPdf struct {
-	MonthlyPayout *models.MonthlyPayout
+func NewDocumentService() *DocumentService {
+	return &DocumentService{}
 }
 
 func setText(pdf *gopdf.GoPdf, x, y float64, text string) {

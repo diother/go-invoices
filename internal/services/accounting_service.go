@@ -9,18 +9,26 @@ import (
 	"github.com/signintech/gopdf"
 )
 
-type AccountingService struct {
-	repo WebhookRepository
+type DocumentService interface {
+	GenerateInvoice(donation *dto.FormattedDonation) (*gopdf.GoPdf, error)
 }
 
-func NewAccountingService(repo WebhookRepository) *AccountingService {
-	return &AccountingService{repo: repo}
+type AccountingService struct {
+	repo     WebhookRepository
+	document DocumentService
+}
+
+func NewAccountingService(repo WebhookRepository, document DocumentService) *AccountingService {
+	return &AccountingService{
+		repo:     repo,
+		document: document,
+	}
 }
 
 func (s *AccountingService) FetchDonations() (donations []*dto.FormattedDonation, err error) {
 	rawDonations, err := s.repo.GetAllDonations()
 	if err != nil {
-		return nil, fmt.Errorf("Fetch donations failed: %w", err)
+		return nil, fmt.Errorf("fetch donations failed: %w", err)
 	}
 	for _, rawDonation := range rawDonations {
 		donations = append(donations, formatDonationModel(rawDonation))
@@ -31,28 +39,15 @@ func (s *AccountingService) FetchDonations() (donations []*dto.FormattedDonation
 func (s *AccountingService) GenerateInvoice(id string) (pdf *gopdf.GoPdf, err error) {
 	donationModel, err := s.repo.GetDonation(id)
 	if err != nil {
-		return nil, fmt.Errorf("Fetch donations failed: %w", err)
+		return nil, fmt.Errorf("fetch donations failed: %w", err)
 	}
 
 	donation := formatDonationModel(donationModel)
 
-	fmt.Println(donation)
-
-	pdf = &gopdf.GoPdf{}
-	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
-	pdf.AddPage()
-
-	if err = pdf.AddTTFFont("Roboto", "./internal/pdf/static/fonts/Roboto-Regular.ttf"); err != nil {
-		return
+	pdf, err = s.document.GenerateInvoice(donation)
+	if err != nil {
+		return nil, fmt.Errorf("generating invoice failed: %w", err)
 	}
-
-	fmt.Println("ID:", id)
-
-	pdf.SetFont("Roboto", "", 10)
-	pdf.SetTextColor(94, 100, 112)
-
-	pdf.SetXY(25, 25)
-	pdf.Cell(nil, "Hello, World!")
 	return
 }
 

@@ -7,6 +7,7 @@ import (
 	"github.com/diother/go-invoices/config"
 	"github.com/diother/go-invoices/database"
 
+	"github.com/diother/go-invoices/internal/documents"
 	"github.com/diother/go-invoices/internal/handlers"
 	"github.com/diother/go-invoices/internal/repository"
 	"github.com/diother/go-invoices/internal/services"
@@ -32,7 +33,9 @@ func main() {
 
 	donationService := services.NewDonationService(webhookRepo)
 	payoutService := services.NewPayoutService(webhookRepo)
-	accountingService := services.NewAccountingService(webhookRepo)
+
+	documentService := documents.NewDocumentService()
+	accountingService := services.NewAccountingService(webhookRepo, documentService)
 
 	webhookHandler := handlers.NewWebhookHandler(donationService, payoutService, stripeEndpointSecret)
 	pwaHandler := handlers.NewPwaHandler(accountingService)
