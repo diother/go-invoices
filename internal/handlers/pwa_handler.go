@@ -51,8 +51,6 @@ func (h *PwaHandler) HandleDocuments(w http.ResponseWriter, r *http.Request) {
 
 	documentType := r.FormValue("type")
 	documentID := r.FormValue("ID")
-	fmt.Println(documentType)
-	fmt.Println(documentID)
 	if err := validateDocumentRequest(documentType, documentID); err != nil {
 		http.Error(w, "Parameters are missing", http.StatusBadRequest)
 		return

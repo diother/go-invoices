@@ -30,10 +30,8 @@ func (s *AccountingService) FetchDonations() (donations []*dto.FormattedDonation
 	if err != nil {
 		return nil, fmt.Errorf("fetch donations failed: %w", err)
 	}
-	for _, rawDonation := range rawDonations {
-		donations = append(donations, formatDonationModel(rawDonation))
-	}
-	return donations, nil
+	donations = formatDonations(rawDonations)
+	return
 }
 
 func (s *AccountingService) GenerateInvoice(id string) (pdf *gopdf.GoPdf, err error) {
@@ -41,12 +39,17 @@ func (s *AccountingService) GenerateInvoice(id string) (pdf *gopdf.GoPdf, err er
 	if err != nil {
 		return nil, fmt.Errorf("fetch donations failed: %w", err)
 	}
-
 	donation := formatDonationModel(donationModel)
-
 	pdf, err = s.document.GenerateInvoice(donation)
 	if err != nil {
 		return nil, fmt.Errorf("generating invoice failed: %w", err)
+	}
+	return
+}
+
+func formatDonations(rawDonations []*models.Donation) (donations []*dto.FormattedDonation) {
+	for _, rawDonation := range rawDonations {
+		donations = append(donations, formatDonationModel(rawDonation))
 	}
 	return
 }
