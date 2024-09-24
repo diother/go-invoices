@@ -30,12 +30,13 @@ func main() {
 	stripe.Key = stripeKey
 
 	webhookRepo := repository.NewWebhookRepository(db)
+	pwaRepo := repository.NewPWARepository(db)
 
 	donationService := services.NewDonationService(webhookRepo)
 	payoutService := services.NewPayoutService(webhookRepo)
 
 	documentService := documents.NewDocumentService()
-	accountingService := services.NewAccountingService(webhookRepo, documentService)
+	accountingService := services.NewAccountingService(pwaRepo, documentService)
 
 	webhookHandler := handlers.NewWebhookHandler(donationService, payoutService, stripeEndpointSecret)
 	pwaHandler := handlers.NewPWAHandler(accountingService)

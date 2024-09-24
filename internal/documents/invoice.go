@@ -18,10 +18,10 @@ func (s *DocumentService) GenerateInvoice(donation *dto.FormattedDonation) (pdf 
 	resetTextStyles(pdf)
 
 	if err = addInvoiceHeader(pdf, donation); err != nil {
-		return
+		return nil, fmt.Errorf("failed adding header: %w", err)
 	}
 	if err = addInvoiceFooter(pdf); err != nil {
-		return
+		return nil, fmt.Errorf("failed adding footer: %w", err)
 	}
 	addInvoiceTable(pdf)
 	addInvoiceProduct(pdf, donation)

@@ -54,7 +54,7 @@ func (r *PWARepository) GetDonation(id string) (*models.Donation, error) {
 }
 
 func (r *PWARepository) GetRelatedDonations(payoutID string) (donations []*models.Donation, err error) {
-	query := "SELECT * FROM donations WHERE payout_id = ?"
+	query := "SELECT id, created, gross, fee, net FROM donations WHERE payout_id = ?"
 
 	if err := r.db.Select(&donations, query, payoutID); err != nil {
 		if err == sql.ErrNoRows {

@@ -17,7 +17,7 @@ func (r *WebhookRepository) InsertFee(fee *models.Fee) error {
 }
 
 func (r *PWARepository) GetRelatedFees(payoutID string) (fees []*models.Fee, err error) {
-	query := "SELECT * FROM fees WHERE payout_id = ?"
+	query := "SELECT id, created, fee FROM fees WHERE payout_id = ?"
 
 	if err := r.db.Select(&fees, query, payoutID); err != nil {
 		if err == sql.ErrNoRows {

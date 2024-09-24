@@ -48,7 +48,6 @@ func (h *PWAHandler) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 		Donations: donations,
 		Payouts:   payouts,
 	}
-
 	tmpl := template.Must(template.New("test").ParseGlob("internal/views/*.html"))
 	if err = tmpl.ExecuteTemplate(w, "home", data); err != nil {
 		fmt.Println(fmt.Errorf("Select failed: %w", err))
