@@ -1,15 +1,17 @@
 package dto
 
 type FormattedFee struct {
-	ID      string
-	Created string
-	Fee     string
+	ID          string
+	Description string
+	Created     string
+	Fee         string
 }
 
-func NewFormattedFee(id, created, fee string) *FormattedFee {
+func NewFormattedFee(id, description, created, fee string) *FormattedFee {
 	return &FormattedFee{
-		ID:      id,
-		Created: created,
-		Fee:     fee,
+		ID:          id,
+		Description: description,
+		Created:     created,
+		Fee:         fee,
 	}
 }

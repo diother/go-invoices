@@ -21,6 +21,7 @@ type PWARepository interface {
 type DocumentService interface {
 	GenerateInvoice(donation *dto.FormattedDonation) (*gopdf.GoPdf, error)
 	GeneratePayoutReport(payoutReportData *dto.PayoutReportData) (*gopdf.GoPdf, error)
+	GenerateMonthlyReport(payouts []*dto.FormattedPayout) (*gopdf.GoPdf, error)
 }
 
 type AccountingService struct {
@@ -36,20 +37,20 @@ func NewAccountingService(repo PWARepository, document DocumentService) *Account
 }
 
 func (s *AccountingService) FetchDonations() (donations []*dto.FormattedDonation, err error) {
-	rawDonations, err := s.repo.GetAllDonations()
+	donationModels, err := s.repo.GetAllDonations()
 	if err != nil {
 		return nil, fmt.Errorf("fetch donations failed: %w", err)
 	}
-	donations = transformDonationModelsToDTOs(rawDonations)
+	donations = transformDonationModelsToDTOs(donationModels)
 	return
 }
 
 func (s *AccountingService) FetchPayouts() (payouts []*dto.FormattedPayout, err error) {
-	rawPayouts, err := s.repo.GetAllPayouts()
+	payoutModels, err := s.repo.GetAllPayouts()
 	if err != nil {
 		return nil, fmt.Errorf("fetch donations failed: %w", err)
 	}
-	payouts = transformPayoutModelsToDTOs(rawPayouts)
+	payouts = transformPayoutModelsToDTOs(payoutModels)
 	return
 }
 
@@ -61,7 +62,7 @@ func (s *AccountingService) GenerateInvoice(id string) (pdf *gopdf.GoPdf, err er
 	donation := transformDonationModelToDTO(donationModel)
 	pdf, err = s.document.GenerateInvoice(donation)
 	if err != nil {
-		return nil, fmt.Errorf("generating invoice failed: %w", err)
+		return nil, fmt.Errorf("generate invoice failed: %w", err)
 	}
 	return
 }
@@ -89,7 +90,20 @@ func (s *AccountingService) GeneratePayoutReport(payoutID string) (pdf *gopdf.Go
 	)
 	pdf, err = s.document.GeneratePayoutReport(payoutReportData)
 	if err != nil {
-		return nil, fmt.Errorf("generating payout report failed: %w", err)
+		return nil, fmt.Errorf("generate payout report failed: %w", err)
+	}
+	return
+}
+
+func (s *AccountingService) GenerateMonthlyReport() (pdf *gopdf.GoPdf, err error) {
+	payoutModels, err := s.repo.GetAllPayouts()
+	if err != nil {
+		return nil, fmt.Errorf("fetch donations failed: %w", err)
+	}
+	payouts := transformPayoutModelsToDTOs(payoutModels)
+	pdf, err = s.document.GenerateMonthlyReport(payouts)
+	if err != nil {
+		return nil, fmt.Errorf("generate monthly report failed: %w", err)
 	}
 	return
 }
@@ -148,6 +162,7 @@ func transformDonationModelToPayoutReportItem(donation *models.Donation) *dto.Pa
 	return dto.NewPayoutReportItem(
 		donation.ID,
 		"donation",
+		"",
 		time.Unix(int64(donation.Created), 0).Format("02 Jan 2006"),
 		fmt.Sprintf("%.2f lei", float64(donation.Gross)/100),
 		fmt.Sprintf("%.2f lei", float64(donation.Fee)/100),
@@ -167,6 +182,7 @@ func transformFeeModelsToDTOs(feeModels []*models.Fee) (fees []*dto.FormattedFee
 func transformFeeModelToDTO(fee *models.Fee) *dto.FormattedFee {
 	return dto.NewFormattedFee(
 		fee.ID,
+		fee.Description,
 		time.Unix(int64(fee.Created), 0).Format("02 Jan 2006"),
 		fmt.Sprintf("%.2f lei", float64(fee.Fee)/100),
 	)
@@ -185,6 +201,7 @@ func transformFeeModelToPayoutReportItem(fee *models.Fee) *dto.PayoutReportItem 
 	return dto.NewPayoutReportItem(
 		fee.ID,
 		"fee",
+		fee.Description,
 		time.Unix(int64(fee.Created), 0).Format("02 Jan 2006"),
 		"0.00 lei",
 		fmt.Sprintf("%.2f lei", float64(fee.Fee)/100),

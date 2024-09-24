@@ -9,15 +9,15 @@ import (
 
 func (r *WebhookRepository) InsertFee(fee *models.Fee) error {
 	query := `
-    INSERT INTO fees (id, created, fee, payout_id)
-	VALUES (:id, :created, :fee, :payout_id)
+    INSERT INTO fees (id, description, created, fee, payout_id)
+	VALUES (:id, :description, :created, :fee, :payout_id)
     `
 	_, err := r.execNamed(query, fee)
 	return err
 }
 
 func (r *PWARepository) GetRelatedFees(payoutID string) (fees []*models.Fee, err error) {
-	query := "SELECT id, created, fee FROM fees WHERE payout_id = ?"
+	query := "SELECT id, description, created, fee FROM fees WHERE payout_id = ?"
 
 	if err := r.db.Select(&fees, query, payoutID); err != nil {
 		if err == sql.ErrNoRows {

@@ -31,21 +31,23 @@ func NewPayoutReportData(payout *FormattedPayout, items []*PayoutReportItem) *Pa
 }
 
 type PayoutReportItem struct {
-	ID      string
-	Type    string
-	Created string
-	Gross   string
-	Fee     string
-	Net     string
+	ID          string
+	Type        string
+	Description string
+	Created     string
+	Gross       string
+	Fee         string
+	Net         string
 }
 
-func NewPayoutReportItem(id, itemType, created, gross, fee, net string) *PayoutReportItem {
+func NewPayoutReportItem(id, itemType, description, created, gross, fee, net string) *PayoutReportItem {
 	return &PayoutReportItem{
-		ID:      id,
-		Type:    itemType,
-		Created: created,
-		Gross:   gross,
-		Fee:     fee,
-		Net:     net,
+		ID:          id,
+		Type:        itemType,
+		Description: description,
+		Created:     created,
+		Gross:       gross,
+		Fee:         fee,
+		Net:         net,
 	}
 }

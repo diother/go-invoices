@@ -38,6 +38,16 @@ func main() {
 	documentService := documents.NewDocumentService()
 	accountingService := services.NewAccountingService(pwaRepo, documentService)
 
+	// payout := &stripe.Payout{
+	// 	ID:     "po_1Pv7ckDXCtuWOFq83MYEK6ec",
+	// 	Status: "paid",
+	// }
+	// err = payoutService.ProcessPayout(payout)
+	// if err != nil {
+	// 	// fmt.Println(err)
+	// 	return
+	// }
+
 	webhookHandler := handlers.NewWebhookHandler(donationService, payoutService, stripeEndpointSecret)
 	pwaHandler := handlers.NewPWAHandler(accountingService)
 

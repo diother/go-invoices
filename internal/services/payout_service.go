@@ -163,6 +163,7 @@ func transformDonationDTOToModel(transaction *stripe.BalanceTransaction, charge 
 func transformFeeDTOToModel(transaction *stripe.BalanceTransaction, payoutID string) *models.Fee {
 	return models.NewFee(
 		transaction.ID,
+		transaction.Description,
 		uint64(transaction.Created),
 		uint32(-transaction.Amount),
 		sql.NullString{String: payoutID, Valid: true},
@@ -330,6 +331,9 @@ func validateFeeTransaction(transaction *stripe.BalanceTransaction) error {
 	}
 	if transaction.ID == "" {
 		return fmt.Errorf(constants.ErrTransactionIDMissing)
+	}
+	if transaction.Description == "" {
+		return fmt.Errorf(constants.ErrFeeTransactionDescriptionMissing)
 	}
 	if transaction.Created <= 0 {
 		return fmt.Errorf(constants.ErrTransactionCreatedInvalid)

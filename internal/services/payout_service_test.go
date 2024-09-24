@@ -186,22 +186,24 @@ func TestValidateFeeTransaction(t *testing.T) {
 	}{
 		"validTransaction": {
 			&stripe.BalanceTransaction{
-				ID:      "txn_fee_123456",
-				Type:    "stripe_fee",
-				Created: 1234567890,
-				Amount:  -100,
-				Fee:     0,
-				Net:     -100,
+				ID:          "txn_fee_123456",
+				Type:        "stripe_fee",
+				Description: "Billing",
+				Created:     1234567890,
+				Amount:      -100,
+				Fee:         0,
+				Net:         -100,
 			},
 			"",
 		},
 		"transactionMissing": {nil, constants.ErrTransactionMissing},
 		"typeInvalid":        {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "charge"}, constants.ErrFeeTransactionTypeInvalid},
 		"IDMissing":          {&stripe.BalanceTransaction{Type: "stripe_fee"}, constants.ErrTransactionIDMissing},
-		"createdInvalid":     {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Created: 0}, constants.ErrTransactionCreatedInvalid},
-		"amountInvalid":      {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Created: 1234567890, Amount: 0}, constants.ErrFeeTransactionAmountInvalid},
-		"feeInvalid":         {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Created: 1234567890, Amount: -100, Fee: 1}, constants.ErrFeeTransactionFeeInvalid},
-		"netInvalid":         {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Created: 1234567890, Amount: -100, Fee: 0, Net: 1}, constants.ErrFeeTransactionNetInvalid},
+		"descriptionMissing": {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee"}, constants.ErrFeeTransactionDescriptionMissing},
+		"createdInvalid":     {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Description: "Billing"}, constants.ErrTransactionCreatedInvalid},
+		"amountInvalid":      {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Description: "Billing", Created: 1234567890, Amount: 0}, constants.ErrFeeTransactionAmountInvalid},
+		"feeInvalid":         {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Description: "Billing", Created: 1234567890, Amount: -100, Fee: 1}, constants.ErrFeeTransactionFeeInvalid},
+		"netInvalid":         {&stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Description: "Billing", Created: 1234567890, Amount: -100, Fee: 0, Net: 1}, constants.ErrFeeTransactionNetInvalid},
 	}
 
 	for name, tc := range testCases {
@@ -220,7 +222,7 @@ func TestValidateFeeTransaction(t *testing.T) {
 func TestValidateRelatedTransactions(t *testing.T) {
 	validPayout := &stripe.BalanceTransaction{ID: "txn_123456", Type: "payout", Created: 1234567890, Amount: -1000, Fee: 0, Net: -1000}
 	validCharge := &stripe.BalanceTransaction{ID: "txn_123456", Type: "charge", Created: 1234567890, Amount: 1000, Fee: 100, Net: 900, Source: &stripe.BalanceTransactionSource{ID: "src_123456"}}
-	validFee := &stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Created: 1234567890, Amount: -100, Fee: 0, Net: -100}
+	validFee := &stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Description: "Billing", Created: 1234567890, Amount: -100, Fee: 0, Net: -100}
 
 	testCases := map[string]struct {
 		input    []*stripe.BalanceTransaction
@@ -264,7 +266,7 @@ func TestValidateRelatedTransactions(t *testing.T) {
 func TestValidateMatchingSums(t *testing.T) {
 	validPayout := &stripe.BalanceTransaction{ID: "txn_123456", Type: "payout", Created: 1234567890, Amount: -800, Fee: 0, Net: -800}
 	validCharge := &stripe.BalanceTransaction{ID: "txn_123456", Type: "charge", Created: 1234567890, Amount: 1000, Fee: 100, Net: 900, Source: &stripe.BalanceTransactionSource{ID: "src_123456"}}
-	validFee := &stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Created: 1234567890, Amount: -100, Fee: 0, Net: -100}
+	validFee := &stripe.BalanceTransaction{ID: "txn_fee_123456", Type: "stripe_fee", Description: "Billing", Created: 1234567890, Amount: -100, Fee: 0, Net: -100}
 
 	testCases := map[string]struct {
 		input         []*stripe.BalanceTransaction
@@ -548,13 +550,15 @@ func TestTransformFeeDTOToModel(t *testing.T) {
 	}{
 		"validData": {
 			transaction: &stripe.BalanceTransaction{
-				ID:      "txn_fee_789456",
-				Created: 1627849100,
-				Amount:  -1000,
+				ID:          "txn_fee_789456",
+				Description: "billing",
+				Created:     1627849100,
+				Amount:      -1000,
 			},
 			payoutID: "po_321654",
 			expected: models.NewFee(
 				"txn_fee_789456",
+				"billing",
 				uint64(1627849100),
 				uint32(1000),
 				sql.NullString{String: "po_321654", Valid: true},

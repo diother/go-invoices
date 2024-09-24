@@ -7,9 +7,10 @@ import (
 	"github.com/signintech/gopdf"
 )
 
-func (s DocumentService) GeneratePayoutReport(payoutReportData *dto.PayoutReportData) (pdf *gopdf.GoPdf, err error) {
-	payout := payoutReportData.Payout
-	items := payoutReportData.Items
+func (s DocumentService) GenerateMonthlyReport(payouts []*dto.FormattedPayout) (pdf *gopdf.GoPdf, err error) {
+	pdf = &gopdf.GoPdf{}
+	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
+	pdf.AddPage()
 
 	pdf = &gopdf.GoPdf{}
 	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
@@ -20,56 +21,55 @@ func (s DocumentService) GeneratePayoutReport(payoutReportData *dto.PayoutReport
 	}
 	resetTextStyles(pdf)
 
-	itemsLength := len(items)
+	itemsLength := len(payouts)
 	pagesNeeded := pagesNeeded(itemsLength)
 	currentPage := 1
 
-	if err = addPayoutReportHeader(pdf, payout.Created); err != nil {
+	if err = addMonthlyReportHeader(pdf, "placeholder date"); err != nil {
 		return nil, fmt.Errorf("failed adding the header: %w", err)
 	}
-	if err = addPayoutReportFooter(pdf, currentPage, pagesNeeded); err != nil {
+	if err = addMonthlyReportFooter(pdf, currentPage, pagesNeeded); err != nil {
 		return nil, fmt.Errorf("failed adding the footer: %w", err)
 	}
 
-	addPayoutSummary(pdf, payout)
-	addPayoutTable(pdf, firstPageTableY)
+	addMonthlyPayoutSummary(pdf)
+	addMonthlyPayoutTable(pdf, firstPageTableY)
 
 	currentY := firstPageStartY
 	maxItemsPerPage := firstPageCapacity
 
 	var itemCounter int
-	for _, item := range items {
+	for _, payout := range payouts {
 		if itemCounter == maxItemsPerPage {
 			pdf.AddPage()
 			currentPage++
 
-			if err = addPayoutReportSecondaryHeader(pdf); err != nil {
-				return nil, fmt.Errorf("failed adding the secondary footer: %w", err)
+			if err = addMonthlyReportSecondaryHeader(pdf); err != nil {
+				return nil, fmt.Errorf("failed adding the secondary header: %w", err)
 			}
-			if err = addPayoutReportFooter(pdf, currentPage, pagesNeeded); err != nil {
+			if err = addMonthlyReportFooter(pdf, currentPage, pagesNeeded); err != nil {
 				return nil, fmt.Errorf("failed adding the footer: %w", err)
 			}
 
-			addPayoutTable(pdf, subsequentPageTableY)
+			addMonthlyPayoutTable(pdf, subsequentPageTableY)
 
 			currentY = secondPageStartY
 			itemCounter = 0
 			maxItemsPerPage = subsequentPageCapacity
 		}
-		addPayoutProduct(pdf, item, currentY)
+		addMonthlyPayoutProduct(pdf, payout, currentY)
 		currentY += itemHeight
 		itemCounter++
 	}
 	return
 }
 
-func addPayoutReportHeader(pdf *gopdf.GoPdf, created string) error {
+func addMonthlyReportHeader(pdf *gopdf.GoPdf, created string) error {
 	const startY = marginTop
 
 	if err := addImage(pdf, "./static/images/stripe-logo.png", marginLeft, startY, 51, 21); err != nil {
 		return err
 	}
-
 	setText(pdf, marginLeft, startY+31, "Stripe Payments Europe, Limited")
 	setText(pdf, marginLeft, startY+47, "The One Building")
 	setText(pdf, marginLeft, startY+63, "1 Grand Canal Street Lower")
@@ -91,13 +91,13 @@ func addPayoutReportHeader(pdf *gopdf.GoPdf, created string) error {
 
 	pdf.SetFont("Roboto-Bold", "", 18)
 	pdf.SetTextColor(0, 0, 0)
-	setRightAlignedText(pdf, marginRight, startY, "Extras plată")
+	setRightAlignedText(pdf, marginRight, startY, "Extras lunar")
 
 	resetTextStyles(pdf)
 	return nil
 }
 
-func addPayoutReportSecondaryHeader(pdf *gopdf.GoPdf) error {
+func addMonthlyReportSecondaryHeader(pdf *gopdf.GoPdf) error {
 	const startY = marginTop
 
 	if err := addImage(pdf, "./static/images/stripe-logo.png", marginLeft, startY, 51, 21); err != nil {
@@ -105,18 +105,18 @@ func addPayoutReportSecondaryHeader(pdf *gopdf.GoPdf) error {
 	}
 	pdf.SetFont("Roboto-Bold", "", 18)
 	pdf.SetTextColor(0, 0, 0)
-	setRightAlignedText(pdf, marginRight, startY, "Extras plată")
+	setRightAlignedText(pdf, marginRight, startY, "Extras lunar")
 
 	resetTextStyles(pdf)
 	return nil
 }
 
-func addPayoutReportFooter(pdf *gopdf.GoPdf, currentPage, pagesNeeded int) error {
+func addMonthlyReportFooter(pdf *gopdf.GoPdf, currentPage, pagesNeeded int) error {
 	const endY = marginBottom
+
 	if err := addImage(pdf, "./static/images/stripe-logo-small.png", marginLeft, endY-17, 41, 17); err != nil {
 		return err
 	}
-
 	pageInfo := fmt.Sprintf("Pagina %d din %d", currentPage, pagesNeeded)
 	setText(pdf, 492, endY-15.5, pageInfo)
 
@@ -124,25 +124,23 @@ func addPayoutReportFooter(pdf *gopdf.GoPdf, currentPage, pagesNeeded int) error
 	return nil
 }
 
-func addPayoutSummary(pdf *gopdf.GoPdf, payout *dto.FormattedPayout) {
+func addMonthlyPayoutSummary(pdf *gopdf.GoPdf) {
 	const startY = 211
 
-	setText(pdf, 81, startY+10, payout.ID)
-	setText(pdf, 112, startY+26, payout.Created)
+	setText(pdf, marginLeft, startY+26, "placeholder period")
 
 	setText(pdf, 312, startY+10, "Preț brut:")
 	setText(pdf, 312, startY+26, "Taxe Stripe:")
 
-	setRightAlignedText(pdf, marginRight, startY+10, payout.Gross)
-	setRightAlignedText(pdf, marginRight, startY+26, "-"+payout.Fee)
+	setRightAlignedText(pdf, marginRight, startY+10, "placeholder lei")
+	setRightAlignedText(pdf, marginRight, startY+26, "placeholder lei")
 
 	pdf.SetTextColor(0, 0, 0)
-	setText(pdf, marginLeft, startY+10, "ID plată:")
-	setText(pdf, marginLeft, startY+26, "Data efectuării:")
+	setText(pdf, marginLeft, startY+10, "Periodă extras:")
 
 	pdf.SetFont("Roboto-Bold", "", 10)
 	setText(pdf, 312, startY+42, "Total:")
-	setRightAlignedText(pdf, marginRight, startY+42, payout.Net)
+	setRightAlignedText(pdf, marginRight, startY+42, "placeholder lei")
 
 	resetTextStyles(pdf)
 
@@ -151,7 +149,7 @@ func addPayoutSummary(pdf *gopdf.GoPdf, payout *dto.FormattedPayout) {
 	pdf.Line(297.5, startY-.5, 298.5, startY+63.5)
 }
 
-func addPayoutTable(pdf *gopdf.GoPdf, startY float64) {
+func addMonthlyPayoutTable(pdf *gopdf.GoPdf, startY float64) {
 	setText(pdf, marginLeft, startY, "Tranzacție")
 	setText(pdf, 328, startY, "Preț brut")
 	setText(pdf, 424.5, startY, "Taxă Stripe")
@@ -160,40 +158,14 @@ func addPayoutTable(pdf *gopdf.GoPdf, startY float64) {
 	pdf.Line(marginLeft, startY+21.5, marginRight, startY+21.5)
 }
 
-func addPayoutProduct(pdf *gopdf.GoPdf, item *dto.PayoutReportItem, startY float64) {
-	setText(pdf, marginLeft, startY+16, item.ID)
+func addMonthlyPayoutProduct(pdf *gopdf.GoPdf, payout *dto.FormattedPayout, startY float64) {
+	setText(pdf, marginLeft, startY+16, payout.Created)
 
-	setRightAlignedText(pdf, 367, startY, item.Gross)
-	setRightAlignedText(pdf, 474, startY, "-"+item.Fee)
+	setRightAlignedText(pdf, 367, startY, payout.Gross)
+	setRightAlignedText(pdf, 474, startY, "-"+payout.Fee)
+	setRightAlignedText(pdf, marginRight, startY, payout.Net)
 
-	var productName string
-	if item.Type == "donation" {
-		setRightAlignedText(pdf, marginRight, startY, item.Net)
-		pdf.SetTextColor(0, 0, 0)
-		productName = "Donație de " + item.Gross
-	} else {
-		setRightAlignedText(pdf, marginRight, startY, "-"+item.Net)
-		pdf.SetTextColor(0, 0, 0)
-		productName = item.Description
-	}
-	setText(pdf, marginLeft, startY, productName)
+	pdf.SetTextColor(0, 0, 0)
+	setText(pdf, marginLeft, startY, payout.ID)
 	pdf.SetTextColor(94, 100, 112)
-}
-
-// needs unit test
-func pagesNeeded(itemsLength int) int {
-	const (
-		firstPageCapacity      = 8
-		subsequentPageCapacity = 12
-	)
-	remainingItems := itemsLength - firstPageCapacity
-	var totalPages int
-
-	if remainingItems > 0 {
-		additionalPages := (remainingItems + subsequentPageCapacity - 1) / subsequentPageCapacity
-		totalPages = 1 + additionalPages
-	} else {
-		totalPages = 1
-	}
-	return totalPages
 }

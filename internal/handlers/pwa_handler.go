@@ -15,6 +15,7 @@ type AccountingService interface {
 	FetchPayouts() ([]*dto.FormattedPayout, error)
 	GenerateInvoice(id string) (*gopdf.GoPdf, error)
 	GeneratePayoutReport(id string) (*gopdf.GoPdf, error)
+	GenerateMonthlyReport() (*gopdf.GoPdf, error)
 }
 
 type PWAHandler struct {
@@ -93,12 +94,20 @@ func (h *PWAHandler) HandleDocuments(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+	case "monthly":
+		pdf, err = h.service.GenerateMonthlyReport()
+		if err != nil {
+			log.Printf("Accounting service error: %v\n", err)
+			http.Error(w, "Internal server error", http.StatusBadRequest)
+			return
+		}
+
 	default:
 		http.Error(w, "Invalid document type", http.StatusBadRequest)
 	}
 
 	w.Header().Set("Content-Type", "application/pdf")
-	w.Header().Set("Content-Disposition", "inline; filename=output.pdf")
+	w.Header().Set("Content-Disposition", "inline; filename=document.pdf")
 
 	if _, err = pdf.WriteTo(w); err != nil {
 		http.Error(w, "Failed to write PDF", http.StatusInternalServerError)

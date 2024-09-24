@@ -6,6 +6,11 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
     </head>
     <body> 
+        <form action="/document" method="POST" target="_blank">
+            <input type="hidden" name="type" value="monthly">
+            <input type="hidden" name="ID" value="bla">
+            <button type="submit">Generate monthly report</button>
+        </form>
         <div>
             <h1>Donations</h1>
             {{ range .Donations }}

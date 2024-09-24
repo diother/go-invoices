@@ -52,8 +52,9 @@ const (
 
 // Fee transaction-related errors
 const (
-	ErrFeeTransactionTypeInvalid   = "transaction is not of type stripe_fee"
-	ErrFeeTransactionAmountInvalid = "fee transaction amount is missing, zero, or positive"
-	ErrFeeTransactionFeeInvalid    = "fee transaction fee is not zero"
-	ErrFeeTransactionNetInvalid    = "fee transaction net is missing, zero, or positive"
+	ErrFeeTransactionTypeInvalid        = "transaction is not of type stripe_fee"
+	ErrFeeTransactionDescriptionMissing = "fee transaction description is missing"
+	ErrFeeTransactionAmountInvalid      = "fee transaction amount is missing, zero, or positive"
+	ErrFeeTransactionFeeInvalid         = "fee transaction fee is not zero"
+	ErrFeeTransactionNetInvalid         = "fee transaction net is missing, zero, or positive"
 )
