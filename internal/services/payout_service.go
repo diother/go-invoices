@@ -62,13 +62,7 @@ func (s *PayoutService) ProcessPayout(payout *stripe.Payout) (err error) {
 		}
 	}()
 
-	payoutModel := models.NewPayout(
-		transactions[0].ID,
-		uint64(transactions[0].Created),
-		uint32(payoutGross),
-		uint32(payoutFee),
-		uint32(payoutNet),
-	)
+	payoutModel := transformPayoutDTOToModel(transactions[0], payoutGross, payoutFee, payoutNet)
 	if err = s.repo.InsertPayout(payoutModel); err != nil {
 		return fmt.Errorf("database payout insertion failed: %w", err)
 	}
@@ -98,20 +92,15 @@ func fetchRelatedTransactions(id string) ([]*stripe.BalanceTransaction, error) {
 	return transactions, nil
 }
 
-func (s *PayoutService) PersistRelatedTransaction(transaction *stripe.BalanceTransaction, payoutId string) (err error) {
+func (s *PayoutService) PersistRelatedTransaction(transaction *stripe.BalanceTransaction, payoutID string) (err error) {
 	switch transaction.Type {
 	case "charge":
-		if err = s.UpsertDonation(transaction, payoutId); err != nil {
+		if err = s.UpsertDonation(transaction, payoutID); err != nil {
 			return fmt.Errorf("upsert donation failed for %s: %w", transaction.ID, err)
 		}
 
 	case "stripe_fee":
-		feeModel := models.NewFee(
-			transaction.ID,
-			uint64(transaction.Created),
-			uint32(transaction.Amount),
-			sql.NullString{String: payoutId, Valid: true},
-		)
+		feeModel := transformFeeDTOToModel(transaction, payoutID)
 		if err = s.repo.InsertFee(feeModel); err != nil {
 			return fmt.Errorf("database donation insertion failed: %w", err)
 		}
@@ -119,8 +108,8 @@ func (s *PayoutService) PersistRelatedTransaction(transaction *stripe.BalanceTra
 	return
 }
 
-func (s *PayoutService) UpsertDonation(transaction *stripe.BalanceTransaction, payoutId string) (err error) {
-	donationModel := models.NewDonation(transaction.ID, 0, 0, 0, 0, "", "", sql.NullString{String: payoutId, Valid: true})
+func (s *PayoutService) UpsertDonation(transaction *stripe.BalanceTransaction, payoutID string) (err error) {
+	donationModel := transformUpdateDonationDTOToModel(transaction.ID, payoutID)
 	updated, err := s.repo.UpdateRelatedPayout(donationModel)
 	if err != nil {
 		return fmt.Errorf("update related payout failed: %w", err)
@@ -136,7 +125,30 @@ func (s *PayoutService) UpsertDonation(transaction *stripe.BalanceTransaction, p
 	if err = validateCharge(charge); err != nil {
 		return fmt.Errorf("related charge validation failed: %w", err)
 	}
-	donationModel = models.NewDonation(
+
+	donationModel = transformDonationDTOToModel(transaction, charge, payoutID)
+	if err = s.repo.InsertDonation(donationModel); err != nil {
+		return fmt.Errorf("database donation insertion failed: %w", err)
+	}
+	return
+}
+
+func transformPayoutDTOToModel(transaction *stripe.BalanceTransaction, gross, fee, net int64) *models.Payout {
+	return models.NewPayout(
+		transaction.ID,
+		uint64(transaction.Created),
+		uint32(gross),
+		uint32(fee),
+		uint32(net),
+	)
+}
+
+func transformUpdateDonationDTOToModel(transactionID, payoutID string) *models.Donation {
+	return models.NewDonation(transactionID, 0, 0, 0, 0, "", "", sql.NullString{String: payoutID, Valid: true})
+}
+
+func transformDonationDTOToModel(transaction *stripe.BalanceTransaction, charge *stripe.Charge, payoutID string) *models.Donation {
+	return models.NewDonation(
 		transaction.ID,
 		uint64(transaction.Created),
 		uint32(transaction.Amount),
@@ -144,12 +156,17 @@ func (s *PayoutService) UpsertDonation(transaction *stripe.BalanceTransaction, p
 		uint32(transaction.Net),
 		charge.BillingDetails.Name,
 		charge.BillingDetails.Email,
-		sql.NullString{String: payoutId, Valid: true},
+		sql.NullString{String: payoutID, Valid: true},
 	)
-	if err = s.repo.InsertDonation(donationModel); err != nil {
-		return fmt.Errorf("database donation insertion failed: %w", err)
-	}
-	return
+}
+
+func transformFeeDTOToModel(transaction *stripe.BalanceTransaction, payoutID string) *models.Fee {
+	return models.NewFee(
+		transaction.ID,
+		uint64(transaction.Created),
+		uint32(-transaction.Amount),
+		sql.NullString{String: payoutID, Valid: true},
+	)
 }
 
 func fetchRelatedCharge(transaction *stripe.BalanceTransaction) (*stripe.Charge, error) {

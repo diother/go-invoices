@@ -1,6 +1,11 @@
 package repository
 
-import "github.com/diother/go-invoices/internal/models"
+import (
+	"database/sql"
+	"fmt"
+
+	"github.com/diother/go-invoices/internal/models"
+)
 
 func (r *WebhookRepository) InsertFee(fee *models.Fee) error {
 	query := `
@@ -9,4 +14,16 @@ func (r *WebhookRepository) InsertFee(fee *models.Fee) error {
     `
 	_, err := r.execNamed(query, fee)
 	return err
+}
+
+func (r *PWARepository) GetRelatedFees(payoutID string) (fees []*models.Fee, err error) {
+	query := "SELECT * FROM fees WHERE payout_id = ?"
+
+	if err := r.db.Select(&fees, query, payoutID); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("no fees with payout_id: %s", payoutID)
+		}
+		return nil, fmt.Errorf("failed to retrieve fees: %w", err)
+	}
+	return
 }

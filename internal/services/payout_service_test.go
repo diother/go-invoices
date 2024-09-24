@@ -1,10 +1,12 @@
 package services
 
 import (
+	"database/sql"
 	"strings"
 	"testing"
 
 	"github.com/diother/go-invoices/internal/constants"
+	"github.com/diother/go-invoices/internal/models"
 	"github.com/stripe/stripe-go/v79"
 )
 
@@ -303,6 +305,278 @@ func TestValidateMatchingSums(t *testing.T) {
 				if net != tc.expectedNet {
 					t.Errorf("Expected net: %d, got: %d", tc.expectedNet, net)
 				}
+			}
+		})
+	}
+}
+
+func TestTransformNoPayoutDonationDTOToModel(t *testing.T) {
+	testCases := map[string]struct {
+		transaction *stripe.BalanceTransaction
+		charge      *stripe.Charge
+		expected    *models.Donation
+	}{
+		"validData": {
+			transaction: &stripe.BalanceTransaction{
+				ID:      "txn_123456",
+				Created: 1234567890,
+				Amount:  2500,
+				Fee:     500,
+				Net:     2000,
+			},
+			charge: &stripe.Charge{
+				BillingDetails: &stripe.ChargeBillingDetails{
+					Name:  "John Doe",
+					Email: "john.doe@example.com",
+				},
+			},
+			expected: models.NewDonation(
+				"txn_123456",
+				uint64(1234567890),
+				uint32(2500),
+				uint32(500),
+				uint32(2000),
+				"John Doe",
+				"john.doe@example.com",
+				sql.NullString{Valid: false},
+			),
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			result := transformNoPayoutDonationDTOToModel(tc.transaction, tc.charge)
+
+			if result.ID != tc.expected.ID {
+				t.Errorf("Expected ID %v, got %v", tc.expected.ID, result.ID)
+			}
+			if result.Created != tc.expected.Created {
+				t.Errorf("Expected Created %v, got %v", tc.expected.Created, result.Created)
+			}
+			if result.Gross != tc.expected.Gross {
+				t.Errorf("Expected Gross %v, got %v", tc.expected.Gross, result.Gross)
+			}
+			if result.Fee != tc.expected.Fee {
+				t.Errorf("Expected Fee %v, got %v", tc.expected.Fee, result.Fee)
+			}
+			if result.Net != tc.expected.Net {
+				t.Errorf("Expected Net %v, got %v", tc.expected.Net, result.Net)
+			}
+			if result.ClientName != tc.expected.ClientName {
+				t.Errorf("Expected ClientName %v, got %v", tc.expected.ClientName, result.ClientName)
+			}
+			if result.ClientEmail != tc.expected.ClientEmail {
+				t.Errorf("Expected ClientEmail %v, got %v", tc.expected.ClientEmail, result.ClientEmail)
+			}
+			if result.PayoutID != tc.expected.PayoutID {
+				t.Errorf("Expected PayoutID %v, got %v", tc.expected.PayoutID, result.PayoutID)
+			}
+		})
+	}
+}
+
+func TestTransformUpdateDonationDTOToModel(t *testing.T) {
+	testCases := map[string]struct {
+		transactionID string
+		payoutID      string
+		expected      *models.Donation
+	}{
+		"validData": {
+			transactionID: "txn_7894561",
+			payoutID:      "txn_789456",
+			expected: models.NewDonation(
+				"txn_7894561",
+				0, 0, 0, 0, "", "",
+				sql.NullString{String: "txn_789456", Valid: true},
+			),
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			result := transformUpdateDonationDTOToModel(tc.transactionID, tc.payoutID)
+
+			if result.ID != tc.expected.ID {
+				t.Errorf("Expected ID %v, got %v", tc.expected.ID, result.ID)
+			}
+			if result.PayoutID != tc.expected.PayoutID {
+				t.Errorf("Expected PayoutID %v, got %v", tc.expected.PayoutID, result.PayoutID)
+			}
+			if result.Created != tc.expected.Created {
+				t.Errorf("Expected Created %v, got %v", tc.expected.Created, result.Created)
+			}
+			if result.Gross != tc.expected.Gross {
+				t.Errorf("Expected Gross %v, got %v", tc.expected.Gross, result.Gross)
+			}
+			if result.Fee != tc.expected.Fee {
+				t.Errorf("Expected Fee %v, got %v", tc.expected.Fee, result.Fee)
+			}
+			if result.Net != tc.expected.Net {
+				t.Errorf("Expected Net %v, got %v", tc.expected.Net, result.Net)
+			}
+			if result.ClientName != tc.expected.ClientName {
+				t.Errorf("Expected ClientName %v, got %v", tc.expected.ClientName, result.ClientName)
+			}
+			if result.ClientEmail != tc.expected.ClientEmail {
+				t.Errorf("Expected ClientEmail %v, got %v", tc.expected.ClientEmail, result.ClientEmail)
+			}
+		})
+	}
+}
+
+func TestTransformDonationDTOToModel(t *testing.T) {
+	testCases := map[string]struct {
+		transaction *stripe.BalanceTransaction
+		charge      *stripe.Charge
+		payoutID    string
+		expected    *models.Donation
+	}{
+		"validData": {
+			transaction: &stripe.BalanceTransaction{
+				ID:      "txn_987654",
+				Created: 1627849100,
+				Amount:  5000,
+				Fee:     1000,
+				Net:     4000,
+			},
+			charge: &stripe.Charge{
+				BillingDetails: &stripe.ChargeBillingDetails{
+					Name:  "Jane Doe",
+					Email: "jane.doe@example.com",
+				},
+			},
+			payoutID: "po_321654",
+			expected: models.NewDonation(
+				"txn_987654",
+				uint64(1627849100),
+				uint32(5000),
+				uint32(1000),
+				uint32(4000),
+				"Jane Doe",
+				"jane.doe@example.com",
+				sql.NullString{String: "po_321654", Valid: true},
+			),
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			result := transformDonationDTOToModel(tc.transaction, tc.charge, tc.payoutID)
+
+			if result.ID != tc.expected.ID {
+				t.Errorf("Expected ID %v, got %v", tc.expected.ID, result.ID)
+			}
+			if result.Created != tc.expected.Created {
+				t.Errorf("Expected Created %v, got %v", tc.expected.Created, result.Created)
+			}
+			if result.Gross != tc.expected.Gross {
+				t.Errorf("Expected Gross %v, got %v", tc.expected.Gross, result.Gross)
+			}
+			if result.Fee != tc.expected.Fee {
+				t.Errorf("Expected Fee %v, got %v", tc.expected.Fee, result.Fee)
+			}
+			if result.Net != tc.expected.Net {
+				t.Errorf("Expected Net %v, got %v", tc.expected.Net, result.Net)
+			}
+			if result.ClientName != tc.expected.ClientName {
+				t.Errorf("Expected ClientName %v, got %v", tc.expected.ClientName, result.ClientName)
+			}
+			if result.ClientEmail != tc.expected.ClientEmail {
+				t.Errorf("Expected ClientEmail %v, got %v", tc.expected.ClientEmail, result.ClientEmail)
+			}
+			if result.PayoutID != tc.expected.PayoutID {
+				t.Errorf("Expected PayoutID %v, got %v", tc.expected.PayoutID, result.PayoutID)
+			}
+		})
+	}
+}
+
+func TestTransformPayoutDTOToModel(t *testing.T) {
+	testCases := map[string]struct {
+		transaction *stripe.BalanceTransaction
+		gross       int64
+		fee         int64
+		net         int64
+		expected    *models.Payout
+	}{
+		"validData": {
+			transaction: &stripe.BalanceTransaction{
+				ID:      "txn_payout_123456",
+				Created: 1627849100,
+			},
+			gross: 10000,
+			fee:   500,
+			net:   9500,
+			expected: models.NewPayout(
+				"txn_payout_123456",
+				uint64(1627849100),
+				uint32(10000),
+				uint32(500),
+				uint32(9500),
+			),
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			result := transformPayoutDTOToModel(tc.transaction, tc.gross, tc.fee, tc.net)
+
+			if result.ID != tc.expected.ID {
+				t.Errorf("Expected ID %v, got %v", tc.expected.ID, result.ID)
+			}
+			if result.Created != tc.expected.Created {
+				t.Errorf("Expected Created %v, got %v", tc.expected.Created, result.Created)
+			}
+			if result.Gross != tc.expected.Gross {
+				t.Errorf("Expected Gross %v, got %v", tc.expected.Gross, result.Gross)
+			}
+			if result.Fee != tc.expected.Fee {
+				t.Errorf("Expected Fee %v, got %v", tc.expected.Fee, result.Fee)
+			}
+			if result.Net != tc.expected.Net {
+				t.Errorf("Expected Net %v, got %v", tc.expected.Net, result.Net)
+			}
+		})
+	}
+}
+
+func TestTransformFeeDTOToModel(t *testing.T) {
+	testCases := map[string]struct {
+		transaction *stripe.BalanceTransaction
+		payoutID    string
+		expected    *models.Fee
+	}{
+		"validData": {
+			transaction: &stripe.BalanceTransaction{
+				ID:      "txn_fee_789456",
+				Created: 1627849100,
+				Amount:  -1000,
+			},
+			payoutID: "po_321654",
+			expected: models.NewFee(
+				"txn_fee_789456",
+				uint64(1627849100),
+				uint32(1000),
+				sql.NullString{String: "po_321654", Valid: true},
+			),
+		},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			result := transformFeeDTOToModel(tc.transaction, tc.payoutID)
+
+			if result.ID != tc.expected.ID {
+				t.Errorf("Expected ID %v, got %v", tc.expected.ID, result.ID)
+			}
+			if result.Created != tc.expected.Created {
+				t.Errorf("Expected Created %v, got %v", tc.expected.Created, result.Created)
+			}
+			if result.Fee != tc.expected.Fee {
+				t.Errorf("Expected Fee %v, got %v", tc.expected.Fee, result.Fee)
+			}
+			if result.PayoutID != tc.expected.PayoutID {
+				t.Errorf("Expected PayoutID %v, got %v", tc.expected.PayoutID, result.PayoutID)
 			}
 		})
 	}

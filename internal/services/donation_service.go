@@ -31,16 +31,7 @@ func (s *DonationService) ProcessDonation(charge *stripe.Charge) (err error) {
 		return fmt.Errorf("Transaction validation error: %w", err)
 	}
 
-	donation := models.NewDonation(
-		transaction.ID,
-		uint64(transaction.Created),
-		uint32(transaction.Amount),
-		uint32(transaction.Fee),
-		uint32(transaction.Net),
-		charge.BillingDetails.Name,
-		charge.BillingDetails.Email,
-		sql.NullString{Valid: false},
-	)
+	donation := transformNoPayoutDonationDTOToModel(transaction, charge)
 	if err = s.repo.InsertDonation(donation); err != nil {
 		return fmt.Errorf("Database donation insertion failed: %w", err)
 	}
@@ -54,4 +45,17 @@ func fetchTransaction(id string) (*stripe.BalanceTransaction, error) {
 		return nil, err
 	}
 	return transaction, nil
+}
+
+func transformNoPayoutDonationDTOToModel(transaction *stripe.BalanceTransaction, charge *stripe.Charge) *models.Donation {
+	return models.NewDonation(
+		transaction.ID,
+		uint64(transaction.Created),
+		uint32(transaction.Amount),
+		uint32(transaction.Fee),
+		uint32(transaction.Net),
+		charge.BillingDetails.Name,
+		charge.BillingDetails.Email,
+		sql.NullString{Valid: false},
+	)
 }
