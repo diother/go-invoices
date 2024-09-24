@@ -9,16 +9,25 @@ import (
 	"github.com/signintech/gopdf"
 )
 
+type PWARepository interface {
+	GetDonation(id string) (*models.Donation, error)
+	GetAllDonations() ([]*models.Donation, error)
+	// GetRelatedDonations(payoutID string) ([]*models.Donation, error)
+	GetPayout(id string) (*models.Payout, error)
+	GetAllPayouts() ([]*models.Payout, error)
+	// GetRelatedFees(payoutID string) ([]*models.Donation, error)
+}
+
 type DocumentService interface {
 	GenerateInvoice(donation *dto.FormattedDonation) (*gopdf.GoPdf, error)
 }
 
 type AccountingService struct {
-	repo     WebhookRepository
+	repo     PWARepository
 	document DocumentService
 }
 
-func NewAccountingService(repo WebhookRepository, document DocumentService) *AccountingService {
+func NewAccountingService(repo PWARepository, document DocumentService) *AccountingService {
 	return &AccountingService{
 		repo:     repo,
 		document: document,
@@ -46,13 +55,33 @@ func (s *AccountingService) FetchPayouts() (payouts []*dto.FormattedPayout, err 
 func (s *AccountingService) GenerateInvoice(id string) (pdf *gopdf.GoPdf, err error) {
 	donationModel, err := s.repo.GetDonation(id)
 	if err != nil {
-		return nil, fmt.Errorf("fetch donations failed: %w", err)
+		return nil, fmt.Errorf("fetch donation failed: %w", err)
 	}
 	donation := formatDonationModel(donationModel)
 	pdf, err = s.document.GenerateInvoice(donation)
 	if err != nil {
 		return nil, fmt.Errorf("generating invoice failed: %w", err)
 	}
+	return
+}
+
+func (s *AccountingService) GeneratePayoutReport(payoutID string) (pdf *gopdf.GoPdf, err error) {
+	payoutModel, err := s.repo.GetPayout(payoutID)
+	if err != nil {
+		return nil, fmt.Errorf("fetch payout failed: %w", err)
+	}
+	// donations, err := s.repo.GetRelatedDonations(payoutID)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("fetch related donations failed: %w", err)
+	// }
+	fmt.Println(payoutModel)
+	// fees, err := s.repo.GetRelatedFees(payoutID)
+	// query the donations associated with the payout
+	// query the stripe_fees associated with the payout
+	// format the payout
+	// format the donations
+	// format the stripe_fees
+	// generate the payout report
 	return
 }
 

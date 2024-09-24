@@ -16,7 +16,7 @@ func (r *WebhookRepository) InsertPayout(payout *models.Payout) error {
 	return err
 }
 
-func (r *WebhookRepository) GetAllPayouts() ([]*models.Payout, error) {
+func (r *PWARepository) GetAllPayouts() ([]*models.Payout, error) {
 	var payouts []*models.Payout
 	query := "SELECT * FROM payouts"
 
@@ -26,7 +26,7 @@ func (r *WebhookRepository) GetAllPayouts() ([]*models.Payout, error) {
 	return payouts, nil
 }
 
-func (r *WebhookRepository) GetPayout(id string) (*models.Payout, error) {
+func (r *PWARepository) GetPayout(id string) (*models.Payout, error) {
 	var payout models.Payout
 	query := "SELECT * FROM payouts WHERE id = ?"
 

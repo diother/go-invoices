@@ -38,7 +38,7 @@ func main() {
 	accountingService := services.NewAccountingService(webhookRepo, documentService)
 
 	webhookHandler := handlers.NewWebhookHandler(donationService, payoutService, stripeEndpointSecret)
-	pwaHandler := handlers.NewPwaHandler(accountingService)
+	pwaHandler := handlers.NewPWAHandler(accountingService)
 
 	fs := http.FileServer(http.Dir("./static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
