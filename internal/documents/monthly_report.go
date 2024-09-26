@@ -7,7 +7,9 @@ import (
 	"github.com/signintech/gopdf"
 )
 
-func (s DocumentService) GenerateMonthlyReport(payouts []*dto.FormattedPayout) (pdf *gopdf.GoPdf, err error) {
+func (s DocumentService) GenerateMonthlyReport(monthlyReportData *dto.MonthlyReportData) (pdf *gopdf.GoPdf, err error) {
+	payouts := monthlyReportData.Payouts
+
 	pdf = &gopdf.GoPdf{}
 	pdf.Start(gopdf.Config{PageSize: *gopdf.PageSizeA4})
 	pdf.AddPage()
@@ -25,14 +27,14 @@ func (s DocumentService) GenerateMonthlyReport(payouts []*dto.FormattedPayout) (
 	pagesNeeded := pagesNeeded(itemsLength)
 	currentPage := 1
 
-	if err = addMonthlyReportHeader(pdf, "placeholder date"); err != nil {
+	if err = addMonthlyReportHeader(pdf, monthlyReportData.EmissionDate); err != nil {
 		return nil, fmt.Errorf("failed adding the header: %w", err)
 	}
 	if err = addMonthlyReportFooter(pdf, currentPage, pagesNeeded); err != nil {
 		return nil, fmt.Errorf("failed adding the footer: %w", err)
 	}
 
-	addMonthlyPayoutSummary(pdf)
+	addMonthlyPayoutSummary(pdf, monthlyReportData)
 	addMonthlyPayoutTable(pdf, firstPageTableY)
 
 	currentY := firstPageStartY
@@ -124,23 +126,23 @@ func addMonthlyReportFooter(pdf *gopdf.GoPdf, currentPage, pagesNeeded int) erro
 	return nil
 }
 
-func addMonthlyPayoutSummary(pdf *gopdf.GoPdf) {
+func addMonthlyPayoutSummary(pdf *gopdf.GoPdf, monthlyReportData *dto.MonthlyReportData) {
 	const startY = 211
 
-	setText(pdf, marginLeft, startY+26, "placeholder period")
+	setText(pdf, marginLeft, startY+26, monthlyReportData.MonthStart+" - "+monthlyReportData.MonthEnd)
 
 	setText(pdf, 312, startY+10, "Preț brut:")
 	setText(pdf, 312, startY+26, "Taxe Stripe:")
 
-	setRightAlignedText(pdf, marginRight, startY+10, "placeholder lei")
-	setRightAlignedText(pdf, marginRight, startY+26, "placeholder lei")
+	setRightAlignedText(pdf, marginRight, startY+10, monthlyReportData.Gross)
+	setRightAlignedText(pdf, marginRight, startY+26, "-"+monthlyReportData.Fee)
 
 	pdf.SetTextColor(0, 0, 0)
 	setText(pdf, marginLeft, startY+10, "Periodă extras:")
 
 	pdf.SetFont("Roboto-Bold", "", 10)
 	setText(pdf, 312, startY+42, "Total:")
-	setRightAlignedText(pdf, marginRight, startY+42, "placeholder lei")
+	setRightAlignedText(pdf, marginRight, startY+42, monthlyReportData.Net)
 
 	resetTextStyles(pdf)
 

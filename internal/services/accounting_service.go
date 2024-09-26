@@ -15,13 +15,14 @@ type PWARepository interface {
 	GetRelatedDonations(payoutID string) ([]*models.Donation, error)
 	GetPayout(id string) (*models.Payout, error)
 	GetAllPayouts() ([]*models.Payout, error)
+	GetMonthlyPayouts(monthStart, monthEnd int64) ([]*models.Payout, error)
 	GetRelatedFees(payoutID string) ([]*models.Fee, error)
 }
 
 type DocumentService interface {
 	GenerateInvoice(donation *dto.FormattedDonation) (*gopdf.GoPdf, error)
 	GeneratePayoutReport(payoutReportData *dto.PayoutReportData) (*gopdf.GoPdf, error)
-	GenerateMonthlyReport(payouts []*dto.FormattedPayout) (*gopdf.GoPdf, error)
+	GenerateMonthlyReport(monthlyReportData *dto.MonthlyReportData) (*gopdf.GoPdf, error)
 }
 
 type AccountingService struct {
@@ -48,7 +49,7 @@ func (s *AccountingService) FetchDonations() (donations []*dto.FormattedDonation
 func (s *AccountingService) FetchPayouts() (payouts []*dto.FormattedPayout, err error) {
 	payoutModels, err := s.repo.GetAllPayouts()
 	if err != nil {
-		return nil, fmt.Errorf("fetch donations failed: %w", err)
+		return nil, fmt.Errorf("fetch payouts failed: %w", err)
 	}
 	payouts = transformPayoutModelsToDTOs(payoutModels)
 	return
@@ -95,13 +96,25 @@ func (s *AccountingService) GeneratePayoutReport(payoutID string) (pdf *gopdf.Go
 	return
 }
 
-func (s *AccountingService) GenerateMonthlyReport() (pdf *gopdf.GoPdf, err error) {
-	payoutModels, err := s.repo.GetAllPayouts()
+func (s *AccountingService) GenerateMonthlyReport(stringDate string) (pdf *gopdf.GoPdf, err error) {
+	date, err := validateMonthString(stringDate)
 	if err != nil {
-		return nil, fmt.Errorf("fetch donations failed: %w", err)
+		return nil, fmt.Errorf("month string invalid: %w", err)
 	}
-	payouts := transformPayoutModelsToDTOs(payoutModels)
-	pdf, err = s.document.GenerateMonthlyReport(payouts)
+
+	monthStartUnix, monthEndUnix := getUnixTimestampsForMonth(date)
+	payoutModels, err := s.repo.GetMonthlyPayouts(monthStartUnix, monthEndUnix)
+	if err != nil {
+		return nil, fmt.Errorf("fetch payouts failed: %w", err)
+	}
+
+	gross, fee, net, err := MonthlyReportSum(payoutModels)
+	if err != nil {
+		return nil, fmt.Errorf("monthly report sum failed: %w", err)
+	}
+
+	monthlyReportData := transformToMonthlyReportData(date, gross, fee, net, payoutModels)
+	pdf, err = s.document.GenerateMonthlyReport(monthlyReportData)
 	if err != nil {
 		return nil, fmt.Errorf("generate monthly report failed: %w", err)
 	}
@@ -207,4 +220,64 @@ func transformFeeModelToPayoutReportItem(fee *models.Fee) *dto.PayoutReportItem 
 		fmt.Sprintf("%.2f lei", float64(fee.Fee)/100),
 		fmt.Sprintf("%.2f lei", float64(fee.Fee)/100),
 	)
+}
+
+// needs unit test
+func transformToMonthlyReportData(date time.Time, gross, fee, net uint32, payoutModels []*models.Payout) *dto.MonthlyReportData {
+	monthStart, monthEnd, emissionDate := getMonthDatesFromISO(date)
+	payouts := transformPayoutModelsToDTOs(payoutModels)
+
+	return dto.NewMonthlyReportData(
+		monthStart,
+		monthEnd,
+		emissionDate,
+		fmt.Sprintf("%.2f lei", float64(gross)/100),
+		fmt.Sprintf("%.2f lei", float64(fee)/100),
+		fmt.Sprintf("%.2f lei", float64(net)/100),
+		payouts,
+	)
+}
+
+// needs unit test
+func getUnixTimestampsForMonth(date time.Time) (monthStart, monthEnd int64) {
+	start := time.Date(date.Year(), date.Month(), 1, 0, 0, 0, 0, time.UTC)
+	monthStart = start.Unix()
+
+	end := start.AddDate(0, 1, 0).Add(-time.Second)
+	monthEnd = end.Unix()
+	return
+}
+
+// needs unit test
+func getMonthDatesFromISO(date time.Time) (monthStart, monthEnd, emissionDate string) {
+	monthStartTime := time.Date(date.Year(), date.Month(), 1, 0, 0, 0, 0, time.UTC)
+	monthEndTime := monthStartTime.AddDate(0, 1, 0).Add(-time.Second)
+	emissionDateTime := monthStartTime.AddDate(0, 1, 0)
+
+	monthStart = monthStartTime.Format("2 Jan, 2006")
+	monthEnd = monthEndTime.Format("2 Jan, 2006")
+	emissionDate = emissionDateTime.Format("2 Jan, 2006")
+	return
+}
+
+// needs unit test
+func validateMonthString(date string) (time.Time, error) {
+	parsedDate, err := time.Parse("2006-01", date)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("invalid date format: %v", err)
+	}
+	return parsedDate, nil
+}
+
+// needs unit test
+func MonthlyReportSum(payouts []*models.Payout) (gross, fee, net uint32, err error) {
+	for _, payout := range payouts {
+		gross += payout.Gross
+		fee += payout.Fee
+		net += payout.Net
+	}
+	if gross-fee != net {
+		return 0, 0, 0, fmt.Errorf("monthly gross-fee %v != net %v", gross-fee, net)
+	}
+	return
 }

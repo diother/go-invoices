@@ -205,9 +205,7 @@ func validateRelatedTransaction(transaction *stripe.BalanceTransaction) error {
 	}
 }
 
-func validateMatchingSums(transactions []*stripe.BalanceTransaction) (int64, int64, int64, error) {
-	var payoutGross, payoutFee int64
-
+func validateMatchingSums(transactions []*stripe.BalanceTransaction) (payoutGross, payoutFee, payoutNet int64, err error) {
 	for _, transaction := range transactions[1:] {
 		switch transaction.Type {
 		case "charge":
@@ -218,14 +216,13 @@ func validateMatchingSums(transactions []*stripe.BalanceTransaction) (int64, int
 			payoutFee -= transaction.Amount
 		}
 	}
-
-	payoutNet := payoutGross - payoutFee
+	payoutNet = payoutGross - payoutFee
 	payoutAmount := -transactions[0].Amount
 
 	if payoutAmount != payoutNet {
 		return 0, 0, 0, fmt.Errorf(constants.ErrPayoutListSumMismatch+". amount %v != net %v", payoutAmount, payoutNet)
 	}
-	return payoutGross, payoutFee, payoutNet, nil
+	return
 }
 
 func validatePayout(payout *stripe.Payout) error {

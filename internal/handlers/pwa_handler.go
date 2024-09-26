@@ -15,7 +15,7 @@ type AccountingService interface {
 	FetchPayouts() ([]*dto.FormattedPayout, error)
 	GenerateInvoice(id string) (*gopdf.GoPdf, error)
 	GeneratePayoutReport(id string) (*gopdf.GoPdf, error)
-	GenerateMonthlyReport() (*gopdf.GoPdf, error)
+	GenerateMonthlyReport(date string) (*gopdf.GoPdf, error)
 }
 
 type PWAHandler struct {
@@ -58,7 +58,7 @@ func (h *PWAHandler) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PWAHandler) HandleDocuments(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
+	if r.Method != http.MethodGet {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -69,8 +69,10 @@ func (h *PWAHandler) HandleDocuments(w http.ResponseWriter, r *http.Request) {
 
 	documentType := r.FormValue("type")
 	documentID := r.FormValue("ID")
-	if err := validateDocumentRequest(documentType, documentID); err != nil {
-		http.Error(w, "Parameters are missing", http.StatusBadRequest)
+	documentDate := r.FormValue("date")
+
+	if err := validateDocumentRequest(documentType, documentID, documentDate); err != nil {
+		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
 
@@ -95,7 +97,7 @@ func (h *PWAHandler) HandleDocuments(w http.ResponseWriter, r *http.Request) {
 		}
 
 	case "monthly":
-		pdf, err = h.service.GenerateMonthlyReport()
+		pdf, err = h.service.GenerateMonthlyReport(documentDate)
 		if err != nil {
 			log.Printf("Accounting service error: %v\n", err)
 			http.Error(w, "Internal server error", http.StatusBadRequest)
@@ -115,12 +117,20 @@ func (h *PWAHandler) HandleDocuments(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func validateDocumentRequest(documentType, documentID string) error {
+// needs unit test
+func validateDocumentRequest(documentType, documentID, documentDate string) error {
 	if documentType == "" {
 		return fmt.Errorf("")
 	}
-	if documentID == "" {
-		return fmt.Errorf("")
+	switch documentType {
+	case "monthly":
+		if documentDate == "" {
+			return fmt.Errorf("")
+		}
+	default:
+		if documentID == "" {
+			return fmt.Errorf("")
+		}
 	}
 	return nil
 }

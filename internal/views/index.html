@@ -6,11 +6,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
     </head>
     <body> 
-        <form action="/document" method="POST" target="_blank">
-            <input type="hidden" name="type" value="monthly">
-            <input type="hidden" name="ID" value="bla">
-            <button type="submit">Generate monthly report</button>
-        </form>
+        <a href="/document?type=monthly&date=2024-09" target="_blank"><button>Generate monthly report</button></a>
         <div>
             <h1>Donations</h1>
             {{ range .Donations }}
@@ -20,11 +16,7 @@
             <li>Fee: {{ .Fee }}</li>
             <li>Net: {{ .Net }}</li>
             <li>Created: {{ .Created }}</li>
-            <form action="/document" method="POST" target="_blank">
-                <input type="hidden" name="type" value="donation">
-                <input type="hidden" name="ID" value="{{ .ID }}">
-                <button type="submit">Invoice</button>
-            </form>
+            <a href="/document?type=donation&ID={{ .ID }}" target="_blank"><button>Invoice</button></a>
             <br>
             {{ else }}
             <li>No donations found.</li>
