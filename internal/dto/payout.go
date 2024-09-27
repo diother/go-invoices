@@ -1,20 +1,24 @@
 package dto
 
 type FormattedPayout struct {
-	ID      string
-	Created string
-	Gross   string
-	Fee     string
-	Net     string
+	ID        string
+	Created   string
+	Gross     string
+	Fee       string
+	Net       string
+	Donations []*FormattedDonation
+	Fees      []*FormattedFee
 }
 
-func NewFormattedPayout(id, created, gross, fee, net string) *FormattedPayout {
+func NewFormattedPayout(id, created, gross, fee, net string, donations []*FormattedDonation, fees []*FormattedFee) *FormattedPayout {
 	return &FormattedPayout{
-		ID:      id,
-		Created: created,
-		Gross:   gross,
-		Fee:     fee,
-		Net:     net,
+		ID:        id,
+		Created:   created,
+		Gross:     gross,
+		Fee:       fee,
+		Net:       net,
+		Donations: donations,
+		Fees:      fees,
 	}
 }
 
@@ -71,5 +75,23 @@ func NewMonthlyReportData(monthStart, monthEnd, emissionDate, gross, fee, net st
 		Fee:          fee,
 		Net:          net,
 		Payouts:      payouts,
+	}
+}
+
+type MonthlyReportView struct {
+	Date    string
+	Gross   string
+	Fee     string
+	Net     string
+	Payouts []*FormattedPayout
+}
+
+func NewMonthlyReportView(date, gross, fee, net string, payouts []*FormattedPayout) *MonthlyReportView {
+	return &MonthlyReportView{
+		Date:    date,
+		Gross:   gross,
+		Fee:     fee,
+		Net:     net,
+		Payouts: payouts,
 	}
 }

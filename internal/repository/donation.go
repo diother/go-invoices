@@ -31,15 +31,6 @@ func (r *WebhookRepository) UpdateRelatedPayout(donation *models.Donation) (bool
 	return rowsAffected != 0, nil
 }
 
-func (r *PWARepository) GetAllDonations() (donations []*models.Donation, err error) {
-	query := "SELECT * FROM donations"
-
-	if err := r.db.Select(&donations, query); err != nil {
-		return nil, err
-	}
-	return
-}
-
 func (r *PWARepository) GetDonation(id string) (*models.Donation, error) {
 	var donation models.Donation
 	query := "SELECT * FROM donations WHERE id = ?"
@@ -54,7 +45,7 @@ func (r *PWARepository) GetDonation(id string) (*models.Donation, error) {
 }
 
 func (r *PWARepository) GetRelatedDonations(payoutID string) (donations []*models.Donation, err error) {
-	query := "SELECT id, created, gross, fee, net FROM donations WHERE payout_id = ?"
+	query := "SELECT id, created, gross, fee, net, client_name FROM donations WHERE payout_id = ?"
 
 	if err := r.db.Select(&donations, query, payoutID); err != nil {
 		if err == sql.ErrNoRows {

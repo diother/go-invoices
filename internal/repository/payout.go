@@ -16,28 +16,12 @@ func (r *WebhookRepository) InsertPayout(payout *models.Payout) error {
 	return err
 }
 
-func (r *PWARepository) GetAllPayouts() ([]*models.Payout, error) {
-	var payouts []*models.Payout
-	query := "SELECT * FROM payouts"
-
-	if err := r.db.Select(&payouts, query); err != nil {
-		return nil, err
-	}
-	if len(payouts) == 0 {
-		return nil, fmt.Errorf("no payouts found")
-	}
-	return payouts, nil
-}
-
 func (r *PWARepository) GetMonthlyPayouts(monthStart, monthEnd int64) ([]*models.Payout, error) {
 	var payouts []*models.Payout
 	query := "SELECT * FROM payouts WHERE created >= ? AND created <= ?"
 
 	if err := r.db.Select(&payouts, query, monthStart, monthEnd); err != nil {
 		return nil, err
-	}
-	if len(payouts) == 0 {
-		return nil, fmt.Errorf("no payouts found for the specified date range")
 	}
 	return payouts, nil
 }

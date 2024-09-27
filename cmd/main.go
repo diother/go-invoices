@@ -57,6 +57,7 @@ func main() {
 	http.HandleFunc("/webhook", webhookHandler.HandleWebhooks)
 	http.HandleFunc("/", pwaHandler.HandleDashboard)
 	http.HandleFunc("/document", pwaHandler.HandleDocuments)
+	http.HandleFunc("/monthly", pwaHandler.HandleMonthly)
 
 	log.Println("Server listening at port 8080")
 	if err = http.ListenAndServe(":8080", nil); err != nil {

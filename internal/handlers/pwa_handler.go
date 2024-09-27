@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
 	"log"
@@ -11,11 +12,10 @@ import (
 )
 
 type AccountingService interface {
-	FetchDonations() ([]*dto.FormattedDonation, error)
-	FetchPayouts() ([]*dto.FormattedPayout, error)
 	GenerateInvoice(id string) (*gopdf.GoPdf, error)
 	GeneratePayoutReport(id string) (*gopdf.GoPdf, error)
 	GenerateMonthlyReport(date string) (*gopdf.GoPdf, error)
+	GenerateMonthlyReportView(date string) (*dto.MonthlyReportView, error)
 }
 
 type PWAHandler struct {
@@ -26,32 +26,10 @@ func NewPWAHandler(service AccountingService) *PWAHandler {
 	return &PWAHandler{service: service}
 }
 
-type DashboardData struct {
-	Donations []*dto.FormattedDonation
-	Payouts   []*dto.FormattedPayout
-}
-
 func (h *PWAHandler) HandleDashboard(w http.ResponseWriter, r *http.Request) {
-	donations, err := h.service.FetchDonations()
-	if err != nil {
-		log.Printf("Failed to fetch donations: %v\n", err)
-		http.Error(w, "Failed to fetch donations", http.StatusInternalServerError)
-		return
-	}
-	payouts, err := h.service.FetchPayouts()
-	if err != nil {
-		log.Printf("Failed to fetch payouts: %v\n", err)
-		http.Error(w, "Failed to fetch payouts", http.StatusInternalServerError)
-		return
-	}
-
-	data := DashboardData{
-		Donations: donations,
-		Payouts:   payouts,
-	}
-	tmpl := template.Must(template.New("test").ParseGlob("internal/views/*.html"))
-	if err = tmpl.ExecuteTemplate(w, "home", data); err != nil {
-		fmt.Println(fmt.Errorf("Select failed: %w", err))
+	tmpl := template.Must(template.New("home").ParseGlob("internal/views/*.html"))
+	if err := tmpl.ExecuteTemplate(w, "home", nil); err != nil {
+		log.Printf("Template execution failed: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
@@ -117,7 +95,39 @@ func (h *PWAHandler) HandleDocuments(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// needs unit test
+func (h *PWAHandler) HandleMonthly(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Failed to parse form", http.StatusBadRequest)
+		return
+	}
+	documentDate := r.FormValue("date")
+	if documentDate == "" {
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	data, err := h.service.GenerateMonthlyReportView(documentDate)
+	if err != nil {
+		log.Printf("Accounting service error: %v\n", err)
+		http.Error(w, "Internal server error", http.StatusBadRequest)
+		return
+	}
+
+	var buffer bytes.Buffer
+	tmpl := template.Must(template.New("monthly").ParseGlob("internal/views/*.html"))
+	if err := tmpl.ExecuteTemplate(&buffer, "monthly", data); err != nil {
+		log.Printf("Template execution failed: %v", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	buffer.WriteTo(w)
+}
+
 func validateDocumentRequest(documentType, documentID, documentDate string) error {
 	if documentType == "" {
 		return fmt.Errorf("")

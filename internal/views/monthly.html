@@ -1,0 +1,59 @@
+{{ define "monthly" }}
+<!doctype html>
+<html lang="en">
+    <head>
+        <title>Monthly page</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+    </head>
+    <body> 
+    {{ if .Payouts }}
+        <h1>Monthly report for {{ .Date }}</h1>
+        <li>Gross: {{ .Gross }}</li>
+        <li>Fee: {{ .Fee }}</li>
+        <li>Net: {{ .Net }}</li>
+        <li>
+            <a href="/document?type=monthly&date={{ .Date }}" target="_blank">
+                <button>Generate monthly report pdf</button>
+            </a>
+        </li>
+        <div>
+            {{ range .Payouts }}
+                <h3>Payout</h3>
+                <li>Created: {{ .Created }}</li>
+                <li>Gross: {{ .Gross }}</li>
+                <li>Fee: {{ .Fee }}</li>
+                <li>Net: {{ .Net }}</li>
+                <li>
+                    <a href="/document?type=payout&ID={{ .ID }}" target="_blank">
+                        <button>Generate payout report pdf</button>
+                    </a>
+                </li>
+                <ul>
+                    {{ range .Donations }}
+                        <h3>Donation</h3>
+                        <li>Created: {{ .Created }}</li>
+                        <li>Client name: {{ .ClientName }}</li>
+                        <li>Gross: {{ .Gross }}</li>
+                        <li>Fee: {{ .Fee }}</li>
+                        <li>Net: {{ .Net }}</li>
+                        <li>
+                            <a href="/document?type=donation&ID={{ .ID }}" target="_blank">
+                                <button>Generate invoice pdf</button>
+                            </a>
+                        </li>
+                    {{ end }}
+                    {{ range .Fees }}
+                        <h3>Fee</h3>
+                        <li>Created: {{ .Created }}</li>
+                        <li>Description: {{ .Description }}</li>
+                        <li>Fee: {{ .Fee }}</li>
+                    {{ end }}
+                </ul>
+            {{ end }}
+        </div>
+        {{ else }}
+            <h1>No payouts for {{ .Date }}</h1>
+        {{ end }}
+    </body>
+</html>
+{{ end }}

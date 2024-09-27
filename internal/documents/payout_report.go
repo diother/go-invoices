@@ -180,7 +180,6 @@ func addPayoutProduct(pdf *gopdf.GoPdf, item *dto.PayoutReportItem, startY float
 	pdf.SetTextColor(94, 100, 112)
 }
 
-// needs unit test
 func pagesNeeded(itemsLength int) int {
 	const (
 		firstPageCapacity      = 8
