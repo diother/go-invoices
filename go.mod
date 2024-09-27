@@ -8,6 +8,7 @@ require (
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/signintech/gopdf v0.26.2
 	github.com/stripe/stripe-go/v79 v79.11.0
+	golang.org/x/crypto v0.27.0
 )
 
 require (

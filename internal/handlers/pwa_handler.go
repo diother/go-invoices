@@ -48,7 +48,6 @@ func (h *PWAHandler) HandleDocuments(w http.ResponseWriter, r *http.Request) {
 	documentType := r.FormValue("type")
 	documentID := r.FormValue("ID")
 	documentDate := r.FormValue("date")
-
 	if err := validateDocumentRequest(documentType, documentID, documentDate); err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return

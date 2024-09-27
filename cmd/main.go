@@ -38,14 +38,15 @@ func main() {
 	documentService := documents.NewDocumentService()
 	accountingService := services.NewAccountingService(pwaRepo, documentService)
 
-	// payout := &stripe.Payout{
-	// 	ID:     "po_1Pv7ckDXCtuWOFq83MYEK6ec",
-	// 	Status: "paid",
+	// payouts := []*stripe.Payout{
+	// 	{ID: "po_1PkFJUDXCtuWOFq8DYodF1nZ", Status: "paid"},
+	// 	{ID: "po_1PZ0YuDXCtuWOFq8wiLw72fu", Status: "paid"},
+	// 	{ID: "po_1Pj9wxDXCtuWOFq8lSKRH9Jx", Status: "paid"},
 	// }
-	// err = payoutService.ProcessPayout(payout)
-	// if err != nil {
-	// 	// fmt.Println(err)
-	// 	return
+	// for _, payout := range payouts {
+	// 	if err = payoutService.ProcessPayout(payout); err != nil {
+	// 		return
+	// 	}
 	// }
 
 	webhookHandler := handlers.NewWebhookHandler(donationService, payoutService, stripeEndpointSecret)
