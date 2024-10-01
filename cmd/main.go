@@ -6,6 +6,7 @@ import (
 
 	"github.com/diother/go-invoices/config"
 	"github.com/diother/go-invoices/database"
+	"github.com/gorilla/mux"
 
 	"github.com/diother/go-invoices/internal/documents"
 	"github.com/diother/go-invoices/internal/handlers"
@@ -31,12 +32,14 @@ func main() {
 
 	webhookRepo := repository.NewWebhookRepository(db)
 	pwaRepo := repository.NewPWARepository(db)
+	authRepo := repository.NewAuthRepository(db)
 
 	donationService := services.NewDonationService(webhookRepo)
 	payoutService := services.NewPayoutService(webhookRepo)
 
 	documentService := documents.NewDocumentService()
 	accountingService := services.NewAccountingService(pwaRepo, documentService)
+	authService := services.NewAuthService(authRepo)
 
 	// payouts := []*stripe.Payout{
 	// 	{ID: "po_1PkFJUDXCtuWOFq8DYodF1nZ", Status: "paid"},
@@ -51,17 +54,21 @@ func main() {
 
 	webhookHandler := handlers.NewWebhookHandler(donationService, payoutService, stripeEndpointSecret)
 	pwaHandler := handlers.NewPWAHandler(accountingService)
+	authHandler := handlers.NewAuthHandler(authService)
 
-	fs := http.FileServer(http.Dir("./static"))
-	http.Handle("/static/", http.StripPrefix("/static/", fs))
+	router := mux.NewRouter()
 
-	http.HandleFunc("/webhook", webhookHandler.HandleWebhooks)
-	http.HandleFunc("/", pwaHandler.HandleDashboard)
-	http.HandleFunc("/document", pwaHandler.HandleDocuments)
-	http.HandleFunc("/monthly", pwaHandler.HandleMonthly)
+	// fs := http.FileServer(http.Dir("./static"))
+	// router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
+
+	router.HandleFunc("/webhook", webhookHandler.HandleWebhooks).Methods("POST")
+	router.HandleFunc("/", pwaHandler.HandleDashboard).Methods("GET")
+	router.HandleFunc("/document", pwaHandler.HandleDocuments).Methods("GET")
+	router.HandleFunc("/monthly", pwaHandler.HandleMonthly).Methods("GET")
+	router.HandleFunc("/login", authHandler.HandleLogin)
 
 	log.Println("Server listening at port 8080")
-	if err = http.ListenAndServe(":8080", nil); err != nil {
+	if err = http.ListenAndServe(":8080", router); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }

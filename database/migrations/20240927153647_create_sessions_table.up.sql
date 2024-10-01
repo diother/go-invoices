@@ -1,6 +1,5 @@
 CREATE TABLE sessions (
-    id SERIAL PRIMARY KEY,
-    user_id INT REFERENCES users(id) ON DELETE CASCADE,
-    session_token VARCHAR(255) UNIQUE NOT NULL,
+    session_token BIGINT PRIMARY KEY,
+    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE NOT NULL,
     expires_at BIGINT NOT NULL
 );

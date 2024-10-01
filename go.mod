@@ -5,6 +5,7 @@ go 1.23.0
 require (
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/golang-migrate/migrate/v4 v4.18.1
+	github.com/gorilla/mux v1.8.1
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/signintech/gopdf v0.26.2
 	github.com/stripe/stripe-go/v79 v79.11.0

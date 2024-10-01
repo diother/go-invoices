@@ -20,15 +20,22 @@ type AccountingService interface {
 
 type PWAHandler struct {
 	service AccountingService
+	tmpl    *template.Template
 }
 
 func NewPWAHandler(service AccountingService) *PWAHandler {
-	return &PWAHandler{service: service}
+	tmpl, err := template.ParseGlob("internal/views/*.html")
+	if err != nil {
+		log.Fatalf("Failed to parse templates: %v", err)
+	}
+	return &PWAHandler{
+		service: service,
+		tmpl:    tmpl,
+	}
 }
 
 func (h *PWAHandler) HandleDashboard(w http.ResponseWriter, r *http.Request) {
-	tmpl := template.Must(template.New("home").ParseGlob("internal/views/*.html"))
-	if err := tmpl.ExecuteTemplate(w, "home", nil); err != nil {
+	if err := h.tmpl.ExecuteTemplate(w, "home", nil); err != nil {
 		log.Printf("Template execution failed: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -36,10 +43,6 @@ func (h *PWAHandler) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PWAHandler) HandleDocuments(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Failed to parse form", http.StatusBadRequest)
 		return
@@ -95,10 +98,6 @@ func (h *PWAHandler) HandleDocuments(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PWAHandler) HandleMonthly(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		return
-	}
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Failed to parse form", http.StatusBadRequest)
 		return
