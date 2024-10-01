@@ -10,6 +10,7 @@ import (
 
 	"github.com/diother/go-invoices/internal/documents"
 	"github.com/diother/go-invoices/internal/handlers"
+	"github.com/diother/go-invoices/internal/middleware"
 	"github.com/diother/go-invoices/internal/repository"
 	"github.com/diother/go-invoices/internal/services"
 	_ "github.com/go-sql-driver/mysql"
@@ -52,6 +53,8 @@ func main() {
 	// 	}
 	// }
 
+	middleware := middleware.NewMiddleware(authService)
+
 	webhookHandler := handlers.NewWebhookHandler(donationService, payoutService, stripeEndpointSecret)
 	pwaHandler := handlers.NewPWAHandler(accountingService)
 	authHandler := handlers.NewAuthHandler(authService)
@@ -62,10 +65,11 @@ func main() {
 	// router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
 
 	router.HandleFunc("/webhook", webhookHandler.HandleWebhooks).Methods("POST")
-	router.HandleFunc("/", pwaHandler.HandleDashboard).Methods("GET")
-	router.HandleFunc("/document", pwaHandler.HandleDocuments).Methods("GET")
-	router.HandleFunc("/monthly", pwaHandler.HandleMonthly).Methods("GET")
 	router.HandleFunc("/login", authHandler.HandleLogin)
+
+	router.Handle("/", middleware.HandleSessions(http.HandlerFunc(pwaHandler.HandleDashboard))).Methods("GET")
+	router.Handle("/document", middleware.HandleSessions(http.HandlerFunc(pwaHandler.HandleDocuments))).Methods("GET")
+	router.Handle("/monthly", middleware.HandleSessions(http.HandlerFunc(pwaHandler.HandleMonthly))).Methods("GET")
 
 	log.Println("Server listening at port 8080")
 	if err = http.ListenAndServe(":8080", router); err != nil {

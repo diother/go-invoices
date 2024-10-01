@@ -82,17 +82,5 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, &cookie)
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
-
-	// for get request send the view
-	// for post request validate the form against the database
-
-	// sessionID, err := generateOrderedSessionToken()
-	// if err != nil {
-	// 	log.Printf("Accounting service error: %v\n", err)
-	// 	http.Error(w, "Internal server error", http.StatusBadRequest)
-	// 	return
-	// }
-	// w.Write([]byte(sessionID))
-
 	return
 }

@@ -8,15 +8,28 @@ import (
 	"github.com/diother/go-invoices/internal/models"
 )
 
-func (r *AuthRepository) GetUser(username string) (*models.User, error) {
-	var donation models.User
+func (r *AuthRepository) GetUserByUsername(username string) (*models.User, error) {
+	var user models.User
 	query := "SELECT * FROM users WHERE username = ?"
 
-	if err := r.db.Get(&donation, query, username); err != nil {
+	if err := r.db.Get(&user, query, username); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, custom_errors.NewCredentialsError("username or password is invalid")
 		}
 		return nil, fmt.Errorf("failed to retrieve user: %w", err)
 	}
-	return &donation, nil
+	return &user, nil
+}
+
+func (r *AuthRepository) GetUserByID(id int64) (*models.User, error) {
+	var user models.User
+	query := "SELECT * FROM users WHERE id = ?"
+
+	if err := r.db.Get(&user, query, id); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("no user with the id: %v", id)
+		}
+		return nil, fmt.Errorf("failed to retrieve user: %w", err)
+	}
+	return &user, nil
 }

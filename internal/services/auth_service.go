@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"strconv"
 	"time"
 
 	"github.com/diother/go-invoices/internal/custom_errors"
@@ -13,7 +14,9 @@ import (
 )
 
 type AuthRepository interface {
-	GetUser(username string) (*models.User, error)
+	GetUserByUsername(username string) (*models.User, error)
+	GetUserByID(userID int64) (*models.User, error)
+	GetSession(sessionToken int64) (*models.Session, error)
 	InsertSession(session *models.Session) error
 }
 
@@ -29,7 +32,7 @@ func (s *AuthService) Authenticate(username, password string) (user *models.User
 	if err := validateCredentials(username, password); err != nil {
 		return nil, custom_errors.NewCredentialsError("validate credentials failed: %v", err)
 	}
-	user, err = s.repo.GetUser(username)
+	user, err = s.repo.GetUserByUsername(username)
 	if err != nil {
 		var credentialsError *custom_errors.CredentialsError
 		if errors.As(err, &credentialsError) {
@@ -49,11 +52,36 @@ func (s *AuthService) GenerateSession(user *models.User) (session *models.Sessio
 	if err != nil {
 		return nil, fmt.Errorf("session token generation failed: %w", err)
 	}
-	expiresAt := time.Now().Unix() + (30 * 24 * 60 * 60)
+	expiresAt := time.Now().Unix() + (12 * 30 * 24 * 60 * 60)
 
 	session = transformSessionDTOToModel(sessionToken, user.ID, expiresAt)
 	if err = s.repo.InsertSession(session); err != nil {
 		return nil, fmt.Errorf("session insertion failed: %w", err)
+	}
+	return
+}
+
+func (s *AuthService) ValidateSession(sessionTokenString string) (user *models.User, err error) {
+	sessionToken, err := validateSessionToken(sessionTokenString)
+	if err != nil {
+		return nil, fmt.Errorf("session token invalid: %w", err)
+	}
+	session, err := s.repo.GetSession(sessionToken)
+	if err != nil {
+		return nil, fmt.Errorf("get session failed: %w", err)
+	}
+	user, err = s.repo.GetUserByID(session.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("get user failed: %w", err)
+	}
+	return
+}
+
+// needs unit test
+func validateSessionToken(sessionToken string) (token int64, err error) {
+	token, err = strconv.ParseInt(sessionToken, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid session token: %w", err)
 	}
 	return
 }
