@@ -82,3 +82,29 @@ func TestTransformSessionDTOToModel(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateSessionToken(t *testing.T) {
+	testCases := map[string]struct {
+		sessionToken string
+		expectError  bool
+	}{
+		"validSessionToken":   {sessionToken: "16960400123456", expectError: false},
+		"invalidSessionToken": {sessionToken: "invalid_token", expectError: true},
+		"emptySessionToken":   {sessionToken: "", expectError: true},
+		"validSmallToken":     {sessionToken: "123", expectError: false},
+		"validNegativeToken":  {sessionToken: "-16960400123456", expectError: false},
+	}
+
+	for name, tc := range testCases {
+		t.Run(name, func(t *testing.T) {
+			_, err := validateSessionToken(tc.sessionToken)
+
+			if tc.expectError && err == nil {
+				t.Errorf("Expected error, but got none")
+			}
+			if !tc.expectError && err != nil {
+				t.Errorf("Expected no error, but got: %v", err)
+			}
+		})
+	}
+}

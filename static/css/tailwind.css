@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --background: 206 49% 95%;
+        --foreground: 0 0% 0%;
+        --primary: 328 80% 47%;
+        --secondary: 220 31% 33%;
+        --muted: 0 0% 42%;
+
+        font-family: "Roboto";
+    }
+    select {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+    }
+    @font-face {
+        font-family: "Roboto";
+        src: url("/static/fonts/Roboto-Regular.woff2") format("woff2");
+        font-weight: 400;
+        font-style: normal;
+    }
+    @font-face {
+        font-family: "Roboto";
+        src: url("/static/fonts/Roboto-Bold.woff2") format("woff2");
+        font-weight: 700;
+        font-style: normal;
+    }
+    @font-face {
+        font-family: "Raleway";
+        src: url("/static/fonts/Raleway-Black.woff2") format("woff2");
+        font-weight: 900;
+        font-style: normal;
+    }
+}

@@ -61,8 +61,8 @@ func main() {
 
 	router := mux.NewRouter()
 
-	// fs := http.FileServer(http.Dir("./static"))
-	// router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
+	fs := http.FileServer(http.Dir("./static"))
+	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
 
 	router.HandleFunc("/webhook", webhookHandler.HandleWebhooks).Methods("POST")
 	router.HandleFunc("/login", authHandler.HandleLogin)

@@ -1,0 +1,38 @@
+{{ define "button" }}
+
+{{ $children := index . 0 }}
+{{ $class := index . 1 }}
+{{ $href := index . 2 }}
+{{ $size := index . 3 }}
+{{ $variant := index . 4 }}
+
+{{ $base := "block rounded-full border text-center font-display transition-colors leading-none" }}
+
+{{ $variantStyles := "" }}
+{{ $sizeStyles := "" }}
+
+{{ if eq $size "xl" }}
+    {{ $sizeStyles = "px-6 py-2 text-xl" }}
+{{ else if eq $size "lg" }}
+    {{ $sizeStyles = "px-5 py-1.5 text-lg" }}
+{{ else }}
+    {{ $sizeStyles = "px-4 py-3 text-base" }}
+{{ end }}
+
+{{ if eq $variant "secondary" }}
+    {{ $variantStyles = "border-primary bg-white text-primary hover:bg-white/80" }}
+{{ else }}
+    {{ $variantStyles = "border-primary bg-primary text-white hover:bg-primary/80" }}
+{{ end }}
+
+{{ if $href }}
+    <a href="{{ $href }}" class="{{- $class }} {{ $base }} {{ $variantStyles }} {{ $sizeStyles -}}">
+        {{- $children -}}
+    </a>
+{{ else }}
+    <button class="{{- $class }} {{ $base }} {{ $variantStyles }} {{ $sizeStyles -}}">
+        {{- $children -}}
+    </button>
+{{ end }}
+
+{{ end }}

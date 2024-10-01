@@ -1,15 +1,35 @@
 {{ define "home" }}
-<!doctype html>
-<html lang="en">
-    <head>
-        <title>Homepage</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-    </head>
-    <body> 
-        <form method="GET" action="/monthly">
-            <input type="text" name="date" placeholder="2024-09" value="2024-07">
-            <button type="submit">See report</button>
-        </form>
-    </body>
-</html>
+{{ template "head" }}
+<main class="bg-background min-h-screen relative flex flex-col px-6 py-12 gap-12">
+    <h1 class="font-display text-3xl text-secondary">Raport lunar</h1>
+    <form method="GET" action="/monthly" class="w-full flex flex-col gap-4">
+        <select 
+            name="month"
+            class="block bg-white h-16 rounded-lg border px-4 text-lg"
+        >
+            <option value="01" {{ if eq .Month "01" }}selected{{ end }}>Ianuarie</option>
+            <option value="02" {{ if eq .Month "02" }}selected{{ end }}>Februarie</option>
+            <option value="03" {{ if eq .Month "03" }}selected{{ end }}>Martie</option>
+            <option value="04" {{ if eq .Month "04" }}selected{{ end }}>Aprilie</option>
+            <option value="05" {{ if eq .Month "05" }}selected{{ end }}>Mai</option>
+            <option value="06" {{ if eq .Month "06" }}selected{{ end }}>Iunie</option>
+            <option value="07" {{ if eq .Month "07" }}selected{{ end }}>Iulie</option>
+            <option value="08" {{ if eq .Month "08" }}selected{{ end }}>August</option>
+            <option value="09" {{ if eq .Month "09" }}selected{{ end }}>Septembrie</option>
+            <option value="10" {{ if eq .Month "10" }}selected{{ end }}>Octombrie</option>
+            <option value="11" {{ if eq .Month "11" }}selected{{ end }}>Noiembrie</option>
+            <option value="12" {{ if eq .Month "12" }}selected{{ end }}>Decembrie</option>
+        </select>
+        <input 
+            class="block h-16 rounded-lg border px-4 text-lg"
+            name="year" 
+            type="text" 
+            placeholder="2024" 
+            value="{{ .Year }}"
+            required 
+        >
+        {{ template "button" (arr "Vezi raport" "" "" "" "") }}
+    </form>
+</main>
+{{ template "foot" }}
 {{ end }}

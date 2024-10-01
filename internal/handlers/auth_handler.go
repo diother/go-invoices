@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/diother/go-invoices/internal/custom_errors"
+	"github.com/diother/go-invoices/internal/helpers"
 	"github.com/diother/go-invoices/internal/models"
 )
 
@@ -23,7 +24,14 @@ type AuthHandler struct {
 }
 
 func NewAuthHandler(service AuthService) *AuthHandler {
-	tmpl, err := template.ParseFiles("internal/views/login.html")
+	tmpl := template.New("base").Funcs(template.FuncMap{
+		"arr": helpers.ComponentHelper,
+	})
+	tmpl, err := tmpl.ParseGlob("internal/views/*.html")
+	if err != nil {
+		log.Fatalf("Failed to parse templates: %v", err)
+	}
+	tmpl, err = tmpl.ParseGlob("internal/views/components/*.html")
 	if err != nil {
 		log.Fatalf("Failed to parse templates: %v", err)
 	}

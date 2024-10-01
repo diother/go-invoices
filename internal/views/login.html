@@ -1,20 +1,27 @@
 {{ define "login" }}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-</head>
-<body>
-    <h1>Login</h1>
-    <form method="POST" action="/login">
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required><br><br>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required><br><br>
-        <button type="submit">Login</button>
+{{ template "head" }}
+<main class="bg-background min-h-screen relative flex flex-col items-center justify-center p-6 py-12 gap-12">
+    <img src="/static/images/hintermann-logo-circle.png" class="w-[100px] h-[100px]">
+    <form method="POST" action="/login" class="w-full flex flex-col gap-4">
+        <input 
+            id="username" 
+            class="block h-16 rounded-lg border px-4 text-lg"
+            name="username" 
+            type="text" 
+            placeholder="Username" 
+            required 
+        >
+        <input 
+            id="password" 
+            class="block h-16 rounded-lg border px-4 text-lg"
+            name="password" 
+            type="text" 
+            placeholder="Password" 
+            required 
+        >
+        {{ template "button" (arr "Conectează-te" "" "" "" "") }}
     </form>
-</body>
-</html>
+    <div class="w-[100px] h-[100px]"></div>
+</main>
+{{ template "foot" }}
 {{ end }}

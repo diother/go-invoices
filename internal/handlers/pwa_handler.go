@@ -6,8 +6,11 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/diother/go-invoices/internal/dto"
+	"github.com/diother/go-invoices/internal/helpers"
+	"github.com/diother/go-invoices/internal/models"
 	"github.com/signintech/gopdf"
 )
 
@@ -24,7 +27,14 @@ type PWAHandler struct {
 }
 
 func NewPWAHandler(service AccountingService) *PWAHandler {
-	tmpl, err := template.ParseGlob("internal/views/*.html")
+	tmpl := template.New("base").Funcs(template.FuncMap{
+		"arr": helpers.ComponentHelper,
+	})
+	tmpl, err := tmpl.ParseGlob("internal/views/*.html")
+	if err != nil {
+		log.Fatalf("Failed to parse templates: %v", err)
+	}
+	tmpl, err = tmpl.ParseGlob("internal/views/components/*.html")
 	if err != nil {
 		log.Fatalf("Failed to parse templates: %v", err)
 	}
@@ -35,7 +45,19 @@ func NewPWAHandler(service AccountingService) *PWAHandler {
 }
 
 func (h *PWAHandler) HandleDashboard(w http.ResponseWriter, r *http.Request) {
-	if err := h.tmpl.ExecuteTemplate(w, "home", nil); err != nil {
+	if _, err := authorize(r, "admin"); err != nil {
+		http.Error(w, "Forbidden: Insufficient permissions", http.StatusForbidden)
+		return
+	}
+
+	data := struct {
+		Month string
+		Year  string
+	}{
+		Month: time.Now().Format("01"),
+		Year:  time.Now().Format("2006"),
+	}
+	if err := h.tmpl.ExecuteTemplate(w, "home", data); err != nil {
 		log.Printf("Template execution failed: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -43,6 +65,11 @@ func (h *PWAHandler) HandleDashboard(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PWAHandler) HandleDocuments(w http.ResponseWriter, r *http.Request) {
+	if _, err := authorize(r, "admin"); err != nil {
+		http.Error(w, "Forbidden: Insufficient permissions", http.StatusForbidden)
+		return
+	}
+
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Failed to parse form", http.StatusBadRequest)
 		return
@@ -98,11 +125,19 @@ func (h *PWAHandler) HandleDocuments(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *PWAHandler) HandleMonthly(w http.ResponseWriter, r *http.Request) {
+	if _, err := authorize(r, "admin"); err != nil {
+		http.Error(w, "Forbidden: Insufficient permissions", http.StatusForbidden)
+		return
+	}
+
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Failed to parse form", http.StatusBadRequest)
 		return
 	}
-	documentDate := r.FormValue("date")
+
+	documentMonth := r.FormValue("month")
+	documentYear := r.FormValue("year")
+	documentDate := documentYear + "-" + documentMonth
 	if documentDate == "" {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
@@ -116,8 +151,7 @@ func (h *PWAHandler) HandleMonthly(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var buffer bytes.Buffer
-	tmpl := template.Must(template.New("monthly").ParseGlob("internal/views/*.html"))
-	if err := tmpl.ExecuteTemplate(&buffer, "monthly", data); err != nil {
+	if err := h.tmpl.ExecuteTemplate(&buffer, "monthly", data); err != nil {
 		log.Printf("Template execution failed: %v", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
@@ -141,4 +175,18 @@ func validateDocumentRequest(documentType, documentID, documentDate string) erro
 		}
 	}
 	return nil
+}
+
+func authorize(r *http.Request, allowedRoles ...string) (*models.User, error) {
+	user, ok := r.Context().Value("user").(*models.User)
+	if !ok || user == nil {
+		return nil, fmt.Errorf("user not found in context")
+	}
+
+	for _, role := range allowedRoles {
+		if user.Role == role {
+			return user, nil
+		}
+	}
+	return nil, fmt.Errorf("user role not authorized")
 }
