@@ -1,56 +1,81 @@
 {{ define "monthly" }}
 {{ template "head" }}
 {{ if .Payouts }}
-<main class="min-h-screen relative flex flex-col gap-12">
+<main class="min-h-screen relative flex flex-col gap-12 leading-none">
     <section class="bg-background px-6 py-12 flex flex-col gap-8">
-    <h1 class="font-display text-3xl text-secondary">Raport {{ .Date }}</h1>
-        <div class="flex flex-col gap-2">
+        <h1 class="font-display text-3xl text-secondary">Raport {{ .Date }}</h1>
+        <div class="flex flex-col gap-4">
             <p class="flex justify-between">Brut: <span>{{ .Gross }}</span></p>
             <p class="flex justify-between">Plăți Stripe: <span>{{ .Fee }}</span></p>
             <p class="flex justify-between font-bold">Net: <span>{{ .Net }}</span></p>
         </div>
         <a href="/document?type=monthly&date={{ .Date }}" target="_blank" class="w-full">
-            {{- template "button" (arr "Raport lunar PDF" "w-full" "" "" "") -}}
+            {{- template "button" (slice "Raport lunar PDF" "w-full" nil nil nil nil) -}}
         </a>
     </section>
-    <div>
+    <section class="flex flex-col gap-6 px-6 pb-12">
+        <h1 class="font-display text-3xl text-secondary">Plăți</h1>
         {{ range .Payouts }}
-        <h3>Payout</h3>
-        <li>Created: {{ .Created }}</li>
-        <li>Gross: {{ .Gross }}</li>
-        <li>Fee: {{ .Fee }}</li>
-        <li>Net: {{ .Net }}</li>
-        <li>
-            <a href="/document?type=payout&ID={{ .ID }}" target="_blank">
-                <button>Generate payout report pdf</button>
-            </a>
-        </li>
-        <ul>
-            {{ range .Donations }}
-            <h3>Donation</h3>
-            <li>Created: {{ .Created }}</li>
-            <li>Client name: {{ .ClientName }}</li>
-            <li>Gross: {{ .Gross }}</li>
-            <li>Fee: {{ .Fee }}</li>
-            <li>Net: {{ .Net }}</li>
-            <li>
-                <a href="/document?type=donation&ID={{ .ID }}" target="_blank">
-                    <button>Generate invoice pdf</button>
+        <div id="{{ .ID }}" class="flex flex-col border rounded-lg">
+            <div class="flex flex-col gap-4 px-6 pt-8">
+                <p class="flex justify-between">Dată: <span>{{ .Created }}</span></p>
+                <p class="flex justify-between">Brut: <span>{{ .Gross }}</span></p>
+                <p class="flex justify-between">Plăți Stripe: <span>{{ .Fee }}</span></p>
+                <p class="flex justify-between font-bold">Net: <span>{{ .Net }}</span></p>
+            </div>
+            <div class="flex flex-col gap-2 px-6 py-8">
+                <a href="/document?type=payout&ID={{ .ID }}" target="_blank">
+                    {{- template "button" (slice "Raport plată PDF" "w-full" nil "sm" "secondary" nil) -}}
                 </a>
-            </li>
-            {{ end }}
-            {{ range .Fees }}
-            <h3>Fee</h3>
-            <li>Created: {{ .Created }}</li>
-            <li>Description: {{ .Description }}</li>
-            <li>Fee: {{ .Fee }}</li>
-            {{ end }}
-        </ul>
+                {{ $attributes := (attr (printf "data-toggle='modal' aria-label='Open Transactions' data-payout-index='%s'" .ID)) }}
+                {{- template "button" (slice "Tranzacții" "toggle-transactions" nil "sm" "secondary-hollow-chevron" $attributes) -}}
+            </div>
+            <div class="transactions hidden bg-background flex-col">
+                {{ range .Donations }}
+                <div class="px-6 py-8 border-t flex flex-col gap-4">
+                    <p class="flex justify-between">Nume: <span>{{ .ClientName }}</span></p>
+                    <p class="flex justify-between">Dată: <span>{{ .Created }}</span></p>
+                    <p class="flex justify-between">Donație: <span>{{ .Gross }}</span></p>
+                    <a href="/document?type=donation&ID={{ .ID }}" target="_blank">
+                        {{- template "button" (slice "Factură PDF" "w-full" nil "sm" "secondary-hollow" nil) -}}
+                    </a>
+                </div>
+                {{ end }}
+                {{ range .Fees }}
+                <div class="px-6 py-8 border-t flex flex-col gap-4">
+                    <p class="flex justify-between gap-16 align-center">
+                        Descriere:
+                        <span class="overflow-hidden whitespace-nowrap text-ellipsis">{{ .Description }}</span>
+                    </p>
+                    <p class="flex justify-between">Dată: <span>{{ .Created }}</span></p>
+                    <p class="flex justify-between">Plată: <span>{{ .Fee }}</span></p>
+                </div>
+                {{ end }}
+            </div>
+        </div>
         {{ end }}
-    </div>
+    </section>
     {{ else }}
-    <h1>No payouts for {{ .Date }}</h1>
+    <section class="bg-background px-6 py-12 flex flex-col gap-8">
+        <h1 class="font-display text-3xl text-secondary">Fără plăți în {{ .Date }}</h1>
+        {{- template "button" (slice "Acasă" nil "/" nil nil nil) -}}
+    </section>
     {{ end }}
+    <script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const toggleButtons = document.querySelectorAll(".toggle-transactions");
+        toggleButtons.forEach(button => {
+            button.addEventListener("click", function () {
+                const index = this.getAttribute("data-payout-index");
+                const transactions = document.querySelector(`#${index} > .transactions`);
+                if (transactions) {
+                    transactions.classList.toggle("hidden");
+                    this.classList.toggle("before:rotate-180");
+                }
+            });
+        });
+    });
+    </script>
 </main>
 {{ template "foot" }}
 {{ end }}

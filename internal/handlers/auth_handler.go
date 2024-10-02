@@ -25,7 +25,8 @@ type AuthHandler struct {
 
 func NewAuthHandler(service AuthService) *AuthHandler {
 	tmpl := template.New("base").Funcs(template.FuncMap{
-		"arr": helpers.ComponentHelper,
+		"slice": helpers.SliceHelper,
+		"attr":  helpers.AttrHelper,
 	})
 	tmpl, err := tmpl.ParseGlob("internal/views/*.html")
 	if err != nil {

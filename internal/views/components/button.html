@@ -5,6 +5,7 @@
 {{ $href := index . 2 }}
 {{ $size := index . 3 }}
 {{ $variant := index . 4 }}
+{{ $attributes := index . 5 }}
 
 {{ $base := "block rounded-full border text-center font-display transition-colors leading-none" }}
 
@@ -15,22 +16,41 @@
     {{ $sizeStyles = "px-6 py-2 text-xl" }}
 {{ else if eq $size "lg" }}
     {{ $sizeStyles = "px-5 py-1.5 text-lg" }}
+{{ else if eq $size "sm" }}
+    {{ $sizeStyles = "px-4 py-2.5 text-sm" }}
 {{ else }}
     {{ $sizeStyles = "px-4 py-3 text-base" }}
 {{ end }}
 
-{{ if eq $variant "secondary" }}
+{{ if eq $variant "hollow" }}
     {{ $variantStyles = "border-primary bg-white text-primary hover:bg-white/80" }}
+{{ else if eq $variant "secondary" }}
+    {{ $variantStyles = "border-secondary bg-secondary text-white hover:bg-secondary/80" }}
+{{ else if eq $variant "secondary-hollow" }}
+    {{ $variantStyles = "border-secondary bg-white text-secondary hover:bg-white/80" }}
+{{ else if eq $variant "secondary-hollow-chevron" }}
+    {{ $variantStyles = "border-secondary bg-white text-secondary hover:bg-white/80 w-full relative before:absolute before:right-4 before:top-1/2 before:-translate-y-1/2 before:w-0 before:h-0 before:border-l-[5px] before:border-r-[5px] before:border-t-[5px] before:border-l-transparent before:border-r-transparent before:border-b-0 before:border-secondary" }}
 {{ else }}
     {{ $variantStyles = "border-primary bg-primary text-white hover:bg-primary/80" }}
 {{ end }}
 
 {{ if $href }}
-    <a href="{{ $href }}" class="{{- $class }} {{ $base }} {{ $variantStyles }} {{ $sizeStyles -}}">
+    <a 
+        href="{{ $href }}" 
+        class="{{- $class }} {{ $base }} {{ $variantStyles }} {{ $sizeStyles -}}"
+        {{ if ne $attributes nil }}
+            {{ $attributes }}
+        {{ end }}
+    >
         {{- $children -}}
     </a>
 {{ else }}
-    <button class="{{- $class }} {{ $base }} {{ $variantStyles }} {{ $sizeStyles -}}">
+    <button 
+        class="{{- $class }} {{ $base }} {{ $variantStyles }} {{ $sizeStyles -}}"
+        {{ if ne $attributes nil }} 
+            {{ $attributes }}
+        {{ end }}
+    >
         {{- $children -}}
     </button>
 {{ end }}

@@ -10,7 +10,7 @@ sleep 1
 new_window=$(tmux display-message -p '#I')
 
 tmux split-window -v
-# tmux split-window -v
+tmux split-window -v
 
 tmux send-keys -t "$session:$window.1" 'docker-compose -f scripts/docker-compose.yml up' C-m
 tmux send-keys -t "$session:$window.2" 'tailwindcss -i ./static/css/tailwind.css -o ./static/css/output.css --watch' C-m
