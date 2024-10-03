@@ -37,7 +37,6 @@ func main() {
 
 	donationService := services.NewDonationService(webhookRepo)
 	payoutService := services.NewPayoutService(webhookRepo)
-
 	documentService := documents.NewDocumentService()
 	accountingService := services.NewAccountingService(pwaRepo, documentService)
 	authService := services.NewAuthService(authRepo)
@@ -53,7 +52,7 @@ func main() {
 	// 	}
 	// }
 
-	middleware := middleware.NewMiddleware(authService)
+	m := middleware.NewMiddleware(authService)
 
 	webhookHandler := handlers.NewWebhookHandler(donationService, payoutService, stripeEndpointSecret)
 	pwaHandler := handlers.NewPWAHandler(accountingService)
@@ -62,17 +61,24 @@ func main() {
 	router := mux.NewRouter()
 
 	fs := http.FileServer(http.Dir("./static"))
-	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
+	router.PathPrefix("/static/").Handler(m.Gzip(m.CacheControl(http.StripPrefix("/static/", fs))))
+
+	router.Handle("/favicon.ico", m.CacheControl(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/x-icon")
+		http.ServeFile(w, r, "./static/images/favicon.ico")
+	})))
 
 	router.HandleFunc("/webhook", webhookHandler.HandleWebhooks).Methods("POST")
-	router.HandleFunc("/login", authHandler.HandleLogin)
 
-	router.Handle("/", middleware.HandleSessions(http.HandlerFunc(pwaHandler.HandleDashboard))).Methods("GET")
-	router.Handle("/document", middleware.HandleSessions(http.HandlerFunc(pwaHandler.HandleDocuments))).Methods("GET")
-	router.Handle("/monthly", middleware.HandleSessions(http.HandlerFunc(pwaHandler.HandleMonthly))).Methods("GET")
+	router.Handle("/login", m.Gzip(http.HandlerFunc(authHandler.HandleLogin)))
+
+	router.Handle("/", m.Gzip(m.HandleSessions(http.HandlerFunc(pwaHandler.HandleDashboard)))).Methods("GET")
+	router.Handle("/document", m.Gzip(m.HandleSessions(http.HandlerFunc(pwaHandler.HandleDocuments)))).Methods("GET")
+	router.Handle("/monthly", m.Gzip(m.HandleSessions(http.HandlerFunc(pwaHandler.HandleMonthly)))).Methods("GET")
 
 	log.Println("Server listening at port 8080")
 	if err = http.ListenAndServe(":8080", router); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
+
 }

@@ -152,7 +152,7 @@ func addMonthlyPayoutSummary(pdf *gopdf.GoPdf, monthlyReportData *dto.MonthlyRep
 }
 
 func addMonthlyPayoutTable(pdf *gopdf.GoPdf, startY float64) {
-	setText(pdf, marginLeft, startY, "Tranzacție")
+	setText(pdf, marginLeft, startY, "Plată")
 	setText(pdf, 328, startY, "Preț brut")
 	setText(pdf, 424.5, startY, "Taxă Stripe")
 	setText(pdf, 532, startY, "Total")

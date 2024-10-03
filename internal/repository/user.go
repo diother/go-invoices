@@ -14,7 +14,7 @@ func (r *AuthRepository) GetUserByUsername(username string) (*models.User, error
 
 	if err := r.db.Get(&user, query, username); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, custom_errors.NewCredentialsError("username or password is invalid")
+			return nil, custom_errors.NewCredentialsError("Nume de utilizator sau parolă invalide")
 		}
 		return nil, fmt.Errorf("failed to retrieve user: %w", err)
 	}

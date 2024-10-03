@@ -1,6 +1,6 @@
-{{ define "home" }}
-{{ template "head" }}
-<main class="bg-background min-h-screen relative flex flex-col px-6 py-12 gap-12">
+{{- define "home" -}}
+{{- template "head" -}}
+<main class="bg-background max-w-screen-sm mx-auto min-h-screen relative flex flex-col px-6 py-12 gap-12">
     <h1 class="font-display text-3xl text-secondary">Raport lunar</h1>
     <form method="GET" action="/monthly" class="w-full flex flex-col gap-4">
         <select 
@@ -31,5 +31,5 @@
         {{ template "button" (slice "Vezi raport" nil nil nil nil nil) }}
     </form>
 </main>
-{{ template "foot" }}
-{{ end }}
+{{- template "foot" -}}
+{{- end -}}

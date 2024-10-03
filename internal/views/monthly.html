@@ -1,44 +1,69 @@
 {{ define "monthly" }}
 {{ template "head" }}
-{{ if .Payouts }}
-<main class="min-h-screen relative flex flex-col gap-12 leading-none">
+<main class="min-h-screen max-w-screen-sm mx-auto relative flex flex-col gap-12 leading-none">
+    {{ if .Payouts }}
     <section class="bg-background px-6 py-12 flex flex-col gap-8">
+        <a href="/" class="underline">Înapoi</a>
         <h1 class="font-display text-3xl text-secondary">Raport {{ .Date }}</h1>
-        <div class="flex flex-col gap-4">
-            <p class="flex justify-between">Brut: <span>{{ .Gross }}</span></p>
-            <p class="flex justify-between">Plăți Stripe: <span>{{ .Fee }}</span></p>
-            <p class="flex justify-between font-bold">Net: <span>{{ .Net }}</span></p>
+        <div class="flex flex-col gap-4 [&_p]:flex [&_p]:justify-between">
+            <p>Brut: <span>{{ .Gross }}</span></p>
+            <p>Plăți Stripe: <span>{{ .Fee }}</span></p>
+            <p class="font-bold">Net: <span>{{ .Net }}</span></p>
         </div>
-        <a href="/document?type=monthly&date={{ .Date }}" target="_blank" class="w-full">
-            {{- template "button" (slice "Raport lunar PDF" "w-full" nil nil nil nil) -}}
-        </a>
+        {{- template "button" (slice 
+            "Raport lunar PDF" 
+            nil 
+            (printf "/document?type=monthly&date=%s" .Date) 
+            nil 
+            nil 
+            (attr "target='_blank'")) 
+        -}}
     </section>
     <section class="flex flex-col gap-6 px-6 pb-12">
         <h1 class="font-display text-3xl text-secondary">Plăți</h1>
         {{ range .Payouts }}
         <div id="{{ .ID }}" class="flex flex-col border rounded-lg">
-            <div class="flex flex-col gap-4 px-6 pt-8">
-                <p class="flex justify-between">Dată: <span>{{ .Created }}</span></p>
-                <p class="flex justify-between">Brut: <span>{{ .Gross }}</span></p>
-                <p class="flex justify-between">Plăți Stripe: <span>{{ .Fee }}</span></p>
-                <p class="flex justify-between font-bold">Net: <span>{{ .Net }}</span></p>
+            <div class="flex flex-col gap-4 px-6 pt-8 [&_p]:flex [&_p]:justify-between">
+                <p>Dată: <span>{{ .Created }}</span></p>
+                <p>Brut: <span>{{ .Gross }}</span></p>
+                <p>Plăți Stripe: <span>{{ .Fee }}</span></p>
+                <p class="font-bold">Net: <span>{{ .Net }}</span></p>
             </div>
             <div class="flex flex-col gap-2 px-6 py-8">
-                <a href="/document?type=payout&ID={{ .ID }}" target="_blank">
-                    {{- template "button" (slice "Raport plată PDF" "w-full" nil "sm" "secondary" nil) -}}
-                </a>
-                {{ $attributes := (attr (printf "data-toggle='modal' aria-label='Open Transactions' data-payout-index='%s'" .ID)) }}
-                {{- template "button" (slice "Tranzacții" "toggle-transactions" nil "sm" "secondary-hollow-chevron" $attributes) -}}
+                {{- template "button" (slice 
+                    "Raport plată PDF" 
+                    nil 
+                    (printf "/document?type=payout&ID=%s" .ID) 
+                    "sm" 
+                    "secondary" 
+                    (attr "target='_blank'")) 
+                -}}
+                {{- $attributes := (attr 
+                    (printf "data-toggle='modal' Transactions' data-payout-index='%s'" .ID)) 
+                -}}
+                {{- template "button" (slice 
+                    "Tranzacții" 
+                    "toggle-transactions" 
+                    nil 
+                    "sm" 
+                    "secondary-hollow-chevron" 
+                    $attributes) 
+                -}}
             </div>
             <div class="transactions hidden bg-background flex-col">
                 {{ range .Donations }}
-                <div class="px-6 py-8 border-t flex flex-col gap-4">
-                    <p class="flex justify-between">Nume: <span>{{ .ClientName }}</span></p>
-                    <p class="flex justify-between">Dată: <span>{{ .Created }}</span></p>
-                    <p class="flex justify-between">Donație: <span>{{ .Gross }}</span></p>
-                    <a href="/document?type=donation&ID={{ .ID }}" target="_blank">
-                        {{- template "button" (slice "Factură PDF" "w-full" nil "sm" "secondary-hollow" nil) -}}
-                    </a>
+                <div class="px-6 py-8 border-t flex flex-col gap-4 [&_p]:flex [&_p]:justify-between">
+                    <p>Nume: <span>{{ .ClientName }}</span></p>
+                    <p>Dată: <span>{{ .Created }}</span></p>
+                    <p>Donație: <span>{{ .Gross }}</span></p>
+                    {{- template "button" (slice 
+                        "Factură PDF" 
+                        nil 
+                        (printf "/document?type=donation&ID=%s" .ID) 
+                        "sm" 
+                        "secondary-hollow" 
+                        (attr "target='_blank'")) 
+                    -}}
                 </div>
                 {{ end }}
                 {{ range .Fees }}
@@ -61,21 +86,7 @@
         {{- template "button" (slice "Acasă" nil "/" nil nil nil) -}}
     </section>
     {{ end }}
-    <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const toggleButtons = document.querySelectorAll(".toggle-transactions");
-        toggleButtons.forEach(button => {
-            button.addEventListener("click", function () {
-                const index = this.getAttribute("data-payout-index");
-                const transactions = document.querySelector(`#${index} > .transactions`);
-                if (transactions) {
-                    transactions.classList.toggle("hidden");
-                    this.classList.toggle("before:rotate-180");
-                }
-            });
-        });
-    });
-    </script>
+    <script src="/static/js/monthly.min.js" defer></script>
 </main>
 {{ template "foot" }}
 {{ end }}

@@ -69,14 +69,14 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			log.Printf("Auth service error: %v\n", err)
-			http.Error(w, "Internal server error", http.StatusBadRequest)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
 
 		session, err := h.service.GenerateSession(user)
 		if err != nil {
 			log.Printf("Auth service error: %v\n", err)
-			http.Error(w, "Internal server error", http.StatusBadRequest)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
 		}
 
 		cookie := http.Cookie{

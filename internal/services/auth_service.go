@@ -30,7 +30,7 @@ func NewAuthService(repo AuthRepository) *AuthService {
 
 func (s *AuthService) Authenticate(username, password string) (user *models.User, err error) {
 	if err := validateCredentials(username, password); err != nil {
-		return nil, custom_errors.NewCredentialsError("validate credentials failed: %v", err)
+		return nil, custom_errors.NewCredentialsError(err.Error())
 	}
 	user, err = s.repo.GetUserByUsername(username)
 	if err != nil {
@@ -42,7 +42,7 @@ func (s *AuthService) Authenticate(username, password string) (user *models.User
 	}
 
 	if err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-		return nil, custom_errors.NewCredentialsError("username or password is invalid")
+		return nil, custom_errors.NewCredentialsError("Nume de utilizator sau parolă invalide")
 	}
 	return
 }
@@ -77,7 +77,6 @@ func (s *AuthService) ValidateSession(sessionTokenString string) (user *models.U
 	return
 }
 
-// needs unit test
 func validateSessionToken(sessionToken string) (token int64, err error) {
 	token, err = strconv.ParseInt(sessionToken, 10, 64)
 	if err != nil {
@@ -98,10 +97,10 @@ func generateSessionID() (int64, error) {
 
 func validateCredentials(username, password string) error {
 	if username == "" {
-		return fmt.Errorf("username is empty")
+		return fmt.Errorf("Lipsește numele de utilizator")
 	}
 	if password == "" {
-		return fmt.Errorf("password is empty")
+		return fmt.Errorf("Lipsește parola")
 	}
 	return nil
 }

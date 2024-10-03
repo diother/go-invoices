@@ -11,14 +11,17 @@ export default {
         fontFamily: {
             body: [
                 "Roboto",
-                "system-ui",
-                "-apple-system",
+                "Helvetica Neue",
+                "Helvetica",
+                "Arial",
                 "sans-serif",
             ],
             display: [
                 "Raleway",
-                "system-ui",
-                "-apple-system",
+                "Segoe UI",
+                "Tahoma",
+                "Geneva",
+                "Verdana",
                 "sans-serif",
             ],
         },

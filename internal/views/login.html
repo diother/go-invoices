@@ -1,8 +1,8 @@
-{{ define "login" }}
-{{ template "head" }}
-<main class="bg-background min-h-screen relative flex flex-col items-center justify-center p-6 py-12 gap-12">
-    <img src="/static/images/hintermann-logo-circle.png" class="w-[100px] h-[100px]">
-    <form method="POST" action="/login" class="w-full flex flex-col gap-4">
+{{- define "login" -}}
+{{- template "head" -}}
+<main class="bg-background max-w-screen-sm mx-auto min-h-screen relative flex flex-col items-center justify-center p-6 py-12 gap-12">
+    <img src="/static/images/hintermann-logo-circle.png" class="w-[100px] h-[100px]" alt="Logo">
+    <form id="loginForm" method="POST" action="/login" class="w-full flex flex-col gap-4" onsubmit="handleSubmit(event)">
         <input 
             id="username" 
             class="block h-16 rounded-lg border px-4 text-lg"
@@ -10,18 +10,22 @@
             type="text" 
             placeholder="Nume utilizator" 
             required 
+            autocomplete="username"
         >
         <input 
             id="password" 
             class="block h-16 rounded-lg border px-4 text-lg"
             name="password" 
-            type="text" 
+            type="password" 
             placeholder="Parolă" 
             required 
+            autocomplete="current-password"
         >
+        <div id="error-message" class="text-red-500"></div>
         {{ template "button" (slice "Conectează-te" nil nil nil nil nil) }}
     </form>
     <div class="w-[100px] h-[100px]"></div>
 </main>
-{{ template "foot" }}
-{{ end }}
+<script src="/static/js/login.min.js" defer></script>
+{{- template "foot" -}}
+{{- end -}}
