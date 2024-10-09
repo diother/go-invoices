@@ -32,7 +32,7 @@ func (s *DocumentService) GenerateInvoice(donation *dto.FormattedDonation) (pdf 
 func addInvoiceHeader(pdf *gopdf.GoPdf, donation *dto.FormattedDonation) error {
 	const startY = marginTop
 
-	if err := addImage(pdf, "./static/images/hintermann-logo.png", marginLeft, marginTop, 167, 17); err != nil {
+	if err := addImage(pdf, "./static/pdf/hintermann-logo.png", marginLeft, marginTop, 167, 17); err != nil {
 		return err
 	}
 	setText(pdf, marginLeft, startY+31, "Asociația de Caritate Hintermann")
@@ -62,7 +62,7 @@ func addInvoiceHeader(pdf *gopdf.GoPdf, donation *dto.FormattedDonation) error {
 func addInvoiceFooter(pdf *gopdf.GoPdf) error {
 	const endY = marginBottom
 
-	if err := addImage(pdf, "./static/images/hintermann-logo-small.png", marginLeft, 796, 138, 14); err != nil {
+	if err := addImage(pdf, "./static/pdf/hintermann-logo-small.png", marginLeft, 796, 138, 14); err != nil {
 		return fmt.Errorf("failed setting image: %w", err)
 	}
 	setRightAlignedText(pdf, 452, endY-14, "contact@hintermann.ro")
@@ -155,8 +155,8 @@ func resetTextStyles(pdf *gopdf.GoPdf) {
 }
 
 func setFonts(pdf *gopdf.GoPdf) error {
-	if err := pdf.AddTTFFont("Roboto", "./static/fonts/Roboto-Regular.ttf"); err != nil {
+	if err := pdf.AddTTFFont("Roboto", "./static/pdf/Roboto-Regular.ttf"); err != nil {
 		return err
 	}
-	return pdf.AddTTFFont("Roboto-Bold", "./static/fonts/Roboto-Bold.ttf")
+	return pdf.AddTTFFont("Roboto-Bold", "./static/pdf/Roboto-Bold.ttf")
 }

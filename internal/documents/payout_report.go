@@ -66,7 +66,7 @@ func (s DocumentService) GeneratePayoutReport(payoutReportData *dto.PayoutReport
 func addPayoutReportHeader(pdf *gopdf.GoPdf, created string) error {
 	const startY = marginTop
 
-	if err := addImage(pdf, "./static/images/stripe-logo.png", marginLeft, startY, 51, 21); err != nil {
+	if err := addImage(pdf, "./static/pdf/stripe-logo.png", marginLeft, startY, 51, 21); err != nil {
 		return err
 	}
 
@@ -100,7 +100,7 @@ func addPayoutReportHeader(pdf *gopdf.GoPdf, created string) error {
 func addPayoutReportSecondaryHeader(pdf *gopdf.GoPdf) error {
 	const startY = marginTop
 
-	if err := addImage(pdf, "./static/images/stripe-logo.png", marginLeft, startY, 51, 21); err != nil {
+	if err := addImage(pdf, "./static/pdf/stripe-logo.png", marginLeft, startY, 51, 21); err != nil {
 		return err
 	}
 	pdf.SetFont("Roboto-Bold", "", 18)
@@ -113,7 +113,7 @@ func addPayoutReportSecondaryHeader(pdf *gopdf.GoPdf) error {
 
 func addPayoutReportFooter(pdf *gopdf.GoPdf, currentPage, pagesNeeded int) error {
 	const endY = marginBottom
-	if err := addImage(pdf, "./static/images/stripe-logo-small.png", marginLeft, endY-17, 41, 17); err != nil {
+	if err := addImage(pdf, "./static/pdf/stripe-logo-small.png", marginLeft, endY-17, 41, 17); err != nil {
 		return err
 	}
 

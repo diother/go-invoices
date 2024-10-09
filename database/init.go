@@ -1,15 +1,15 @@
 package database
 
 import (
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/mysql"
+	_ "github.com/golang-migrate/migrate/v4/database/sqlite3"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/jmoiron/sqlx"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 func InitDB(dsn string) (*sqlx.DB, error) {
-	db, err := sqlx.Connect("mysql", dsn)
+	db, err := sqlx.Connect("sqlite3", dsn)
 	if err != nil {
 		return nil, err
 	}
@@ -22,7 +22,7 @@ func InitDB(dsn string) (*sqlx.DB, error) {
 func ApplyMigrations(dsn string) error {
 	m, err := migrate.New(
 		"file://database/migrations",
-		"mysql://"+dsn,
+		"sqlite3://"+dsn,
 	)
 	if err != nil {
 		return err

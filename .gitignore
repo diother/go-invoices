@@ -2,3 +2,6 @@ output/
 scripts/mysql_data/
 tmp/
 static/css/output.css
+data/
+
+.env

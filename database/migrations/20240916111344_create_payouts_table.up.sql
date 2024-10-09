@@ -1,8 +1,9 @@
 CREATE TABLE payouts (
-    id VARCHAR(255) PRIMARY KEY,
-    created BIGINT UNSIGNED NOT NULL,
-    gross INT UNSIGNED NOT NULL,
-    fee INT UNSIGNED NOT NULL,
-    net INT UNSIGNED NOT NULL,
-    INDEX idx_created (created)
+    id TEXT PRIMARY KEY,
+    created INTEGER NOT NULL,
+    gross INTEGER NOT NULL,
+    fee INTEGER NOT NULL,
+    net INTEGER NOT NULL
 );
+
+CREATE INDEX idx_created ON payouts (created);

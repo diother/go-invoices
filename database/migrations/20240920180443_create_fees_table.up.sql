@@ -1,9 +1,10 @@
 CREATE TABLE fees (
-    id VARCHAR(255) PRIMARY KEY,
-    description VARCHAR(255) NOT NULL,
-    created BIGINT UNSIGNED NOT NULL,
-    fee INT UNSIGNED NOT NULL,
-    payout_id VARCHAR(255),
-    FOREIGN KEY (payout_id) REFERENCES payouts(id),
-    INDEX idx_payout_id (payout_id)
+    id TEXT PRIMARY KEY,
+    description TEXT NOT NULL,
+    created INTEGER NOT NULL,
+    fee INTEGER NOT NULL,
+    payout_id TEXT,
+    FOREIGN KEY (payout_id) REFERENCES payouts(id)
 );
+
+CREATE INDEX idx_fees_payout_id ON fees (payout_id);

@@ -69,7 +69,7 @@ func (s DocumentService) GenerateMonthlyReport(monthlyReportData *dto.MonthlyRep
 func addMonthlyReportHeader(pdf *gopdf.GoPdf, created string) error {
 	const startY = marginTop
 
-	if err := addImage(pdf, "./static/images/stripe-logo.png", marginLeft, startY, 51, 21); err != nil {
+	if err := addImage(pdf, "./static/pdf/stripe-logo.png", marginLeft, startY, 51, 21); err != nil {
 		return err
 	}
 	setText(pdf, marginLeft, startY+31, "Stripe Payments Europe, Limited")
@@ -102,7 +102,7 @@ func addMonthlyReportHeader(pdf *gopdf.GoPdf, created string) error {
 func addMonthlyReportSecondaryHeader(pdf *gopdf.GoPdf) error {
 	const startY = marginTop
 
-	if err := addImage(pdf, "./static/images/stripe-logo.png", marginLeft, startY, 51, 21); err != nil {
+	if err := addImage(pdf, "./static/pdf/stripe-logo.png", marginLeft, startY, 51, 21); err != nil {
 		return err
 	}
 	pdf.SetFont("Roboto-Bold", "", 18)
@@ -116,7 +116,7 @@ func addMonthlyReportSecondaryHeader(pdf *gopdf.GoPdf) error {
 func addMonthlyReportFooter(pdf *gopdf.GoPdf, currentPage, pagesNeeded int) error {
 	const endY = marginBottom
 
-	if err := addImage(pdf, "./static/images/stripe-logo-small.png", marginLeft, endY-17, 41, 17); err != nil {
+	if err := addImage(pdf, "./static/pdf/stripe-logo-small.png", marginLeft, endY-17, 41, 17); err != nil {
 		return err
 	}
 	pageInfo := fmt.Sprintf("Pagina %d din %d", currentPage, pagesNeeded)
