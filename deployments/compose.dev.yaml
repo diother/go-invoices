@@ -1,23 +1,20 @@
 services:
-  backend:
+  app:
     build:
       context: ../
-      dockerfile: deployments/Dockerfile.dev
-    ports:
-      - "8080"
+      dockerfile: deployments/Dockerfile.app.dev
+    container_name: app
     volumes:
       - ../:/app
-      - ../database/data:/app/database/data
     env_file:
       - ../.env
 
   nginx:
-    image: nginx:latest
-    container_name: hintermann_nginx
+    build:
+      context: ../
+      dockerfile: deployments/Dockerfile.nginx.dev
+    container_name: nginx
     ports:
       - "80:80"
-    volumes:
-      - ../config/nginx.conf:/etc/nginx/nginx.conf
-      - ../:/app
     depends_on:
-      - backend
+      - app

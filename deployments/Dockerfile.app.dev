@@ -1,0 +1,9 @@
+FROM golang:1.23.1-bookworm
+
+WORKDIR /app
+
+RUN go install github.com/air-verse/air@latest
+
+EXPOSE 8080
+
+CMD ["air"]

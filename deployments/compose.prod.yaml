@@ -1,0 +1,22 @@
+services:
+  app:
+    build:
+      context: ../
+      dockerfile: deployments/Dockerfile.app.prod
+    image: diother/prod-app:latest
+    container_name: prod-app
+    volumes:
+      - ../database/data:/app/database/data
+    env_file:
+      - ../.env
+
+  nginx:
+    build:
+      context: ../
+      dockerfile: deployments/Dockerfile.nginx.prod
+    image: diother/prod-nginx:latest
+    container_name: prod-nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - app
