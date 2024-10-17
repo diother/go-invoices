@@ -3,7 +3,7 @@ services:
     build:
       context: ../
       dockerfile: deployments/Dockerfile.app.prod
-    image: diother/prod-app:latest
+    image: diother/prod-app:latest 
     container_name: prod-app
     volumes:
       - ../database/data:/app/database/data
@@ -18,5 +18,8 @@ services:
     container_name: prod-nginx
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
     depends_on:
       - app

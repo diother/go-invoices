@@ -2,7 +2,7 @@ FROM nginx:alpine
 
 WORKDIR /etc/nginx
 
-COPY ./config/nginx.dev.conf ./nginx.conf
+COPY ./config/nginx.prod.conf ./nginx.conf
 COPY ./static /usr/share/nginx/html/static
 
 EXPOSE 80
